@@ -7,12 +7,12 @@ import csv
 
 class reviewProcessor :
 
-	def __init__(self):
+	def __init__(self, review_fileName):
 
 		self.stopwords = set(nltk.corpus.stopwords.words('english'))
 		self.stemmer = nltk.stem.snowball.SnowballStemmer('english')
 		self.lmtzr = nltk.stem.wordnet.WordNetLemmatizer()
-		self.review_fileName = '../Data/reviews.csv'
+		self.review_fileName = review_fileName
 		self.disk_engine = create_engine('sqlite:///..Data/yelp.db')
 
 
@@ -48,9 +48,11 @@ class reviewProcessor :
 						row[text_ix] = self.process_text(review_text)
 						row = [field.encode('ascii', 'ignore') for field in row]
 						records += [row]
-						if len(records)%2000 == 0:
+						if len(records)%20000 == 0:
 							print '{} seconds: completed {} rows'.format((dt.now() - time_start).seconds, len(records))
 				i += 1
+
+		csvfile.close()
 
 		self.schema = schema
 		self.records = records
@@ -93,7 +95,7 @@ class reviewProcessor :
 						row[text_ix] = self.process_text(review_text)
 						row = [field.encode('ascii', 'ignore') for field in row]
 						records += [row]
-						if len(records)%2000 == 0:
+						if len(records)%20000 == 0:
 							chunkNum += 1
 							writer.writerows(records)
 							print '{} seconds: completed {} rows'.format((dt.now() - time_start).seconds, chunkNum*chunkSize)
@@ -104,3 +106,29 @@ class reviewProcessor :
 				writer.writerows(records)
 				
 			outputFile.close()
+
+		csvfile.close()
+
+
+if __name__ == "__main__":
+	review_fileName = '../Data/yelp_academic_dataset_review.json'
+
+	with open(review_fileName) as f:
+    	reviews = pd.DataFrame(json.loads(line) for line in f)
+    f.close()
+
+    print 'Finished loading json file into pandas dataframe'
+    print 'Projecting relevant columns: review_id (index), business_id, stars, text, user_id...'
+
+	reviews = reviews.set_index(['review_id'])
+	reviews = reviews[['business_id', 'stars', 'text', 'user_id']]
+
+	print 'Projection completed... starting write into csv file...'
+	reviews.to_csv('../Data/reviews.csv', sep='\t', encoding='utf-8', line_terminator='\nsen\n')
+	print 'Finished writing into csv file: ../Data/reviews.csv'
+
+	print 'Beginning processing of reviews to perform stemming and lemmatization of all words...'
+	review_fileName = '../Data/reviews.csv'
+	reviewer = reviewProcessor(review_fileName)
+	reviewer.process_save('../Data/stemmed_reviews.csv')
+	print 'Completed processing'
