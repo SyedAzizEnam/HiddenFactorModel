@@ -33,6 +33,7 @@ for j in range(1,6):
 	restaurant_reviews = reviews[reviews['business_id'].isin(business_ids)]
 	ratings = restaurant_reviews['stars']
 	review_text = restaurant_reviews['text']
+	review_ ids = reviews['business_id']
 
 	i=0
 	for entry in review_text:
