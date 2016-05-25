@@ -2,6 +2,7 @@ import pandas as pd
 import json
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
+from nltk.stem import SnowballStemmer
 import string
 from unidecode import unidecode
 
@@ -9,12 +10,14 @@ cachedstopwords = stopwords.words('english')
 
 wnl = WordNetLemmatizer()
 
+stemmer = SnowballStemmer('english')
+
 def cleantext(text):
 	''' Removes punctuation and converts to lowercase'''
 	text = unidecode(text)
 	unpuncted_text = reduce(lambda s,c: s.replace(c, ''), string.punctuation, text.lower()) 
 	cleaned_text = ' '.join(word for word in unpuncted_text.split() if word not in cachedstopwords)
-	stemmed_text = ' '.join(unidecode(wnl.lemmatize(wnl.lemmatize(word),'v')) for word in cleaned_text.split())
+	stemmed_text = ' '.join(stemmer.stem(unidecode(wnl.lemmatize(wnl.lemmatize(word),'v'))) for word in cleaned_text.split())
 	return stemmed_text
 
 
@@ -28,6 +31,7 @@ for j in range(1,6):
 	reviews =pd.read_csv('yelp_academic_dataset_review{0}.csv'.format(j),encoding="utf-8")
 
 	restaurant_reviews = reviews[reviews['business_id'].isin(business_ids)]
+	ratings = restaurant_reviews['stars']
 	review_text = restaurant_reviews['text']
 
 	i=0
