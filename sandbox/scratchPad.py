@@ -17,6 +17,14 @@ with open(business_fileName) as f:
 f.close()
 business = business.set_index(['business_id'])
 
+business_categories = []
+for c in business['categories']:
+	business_categories += c
+business_categories = list(set(business_categories))
+business_categories.sort()
+f= open('../Data/business_categories.txt', 'w')
+f.writelines(["%s\n" % str(category)  for category in business_categories])
+f.close()
 
 import nltk
 from nltk.stem.snowball import SnowballStemmer
@@ -45,3 +53,15 @@ for i,entry in enumerate(reviews['text']):
         len(entry)
     except:
         print i, entry
+
+f = open('../Data/stemmed_reviews.csv', 'rb')
+reader = csv.reader(f)
+business_ids = []
+for row in reader:
+	business_ids += [row[1]]
+business_ids = business_ids[1:]
+business_ids = list(set(business_ids))
+restaurant_ids = set([id.strip() for id in open('../Data/restaurant_business_ids.txt', 'rb')])
+for id in business_ids:
+	if id not in restaurant_ids:
+		print id

@@ -4,6 +4,7 @@ import nltk
 from sqlalchemy import create_engine
 from datetime import datetime as dt
 import csv
+from os import path
 
 class reviewProcessor :
 
@@ -14,6 +15,7 @@ class reviewProcessor :
 		self.lmtzr = nltk.stem.wordnet.WordNetLemmatizer()
 		self.review_fileName = review_fileName
 		self.disk_engine = create_engine('sqlite:///..Data/yelp.db')
+		self.restaurant_ids = set([id.strip() for id in open('../Data/restaurant_business_ids.txt', 'rb')])
 
 
 	def process_text(self, sentence):
@@ -33,6 +35,7 @@ class reviewProcessor :
 
 		time_start = dt.now()
 		i = 0
+		chunkSize = 20000
 		
 		records = []
 		with open(self.review_fileName, 'rb') as csvfile:
@@ -42,14 +45,16 @@ class reviewProcessor :
 					row = [field.encode('ascii', 'ignore') for field in row]
 					schema = row
 					text_ix = schema.index('text')
+					businessID_ix = schema.index('business_id')
 				else:
 					if i%2 == 0:
-						review_text = row[text_ix]
-						row[text_ix] = self.process_text(review_text)
-						row = [field.encode('ascii', 'ignore') for field in row]
-						records += [row]
-						if len(records)%20000 == 0:
-							print '{} seconds: completed {} rows'.format((dt.now() - time_start).seconds, len(records))
+						if str(row[businessID_ix]) in self.restaurant_ids:
+							review_text = row[text_ix]
+							row[text_ix] = self.process_text(review_text)
+							row = [field.encode('ascii', 'ignore') for field in row]
+							records += [row]
+							if len(records)%chunkSize == 0:
+								print '{} seconds: completed {} rows'.format((dt.now() - time_start).seconds, len(records))
 				i += 1
 
 		csvfile.close()
@@ -71,7 +76,7 @@ class reviewProcessor :
 
 		time_start = dt.now()
 		i = 0
-		chunkSize = 2000
+		chunkSize = 20000
 		
 		records = []
 		with open(self.review_fileName, 'rb') as csvfile:
@@ -87,23 +92,26 @@ class reviewProcessor :
 					row = [field.encode('ascii', 'ignore') for field in row]
 					schema = row
 					text_ix = schema.index('text')
+					businessID_ix = schema.index('business_id')
 					records += [schema]
 
 				else:
 					if i%2 == 0:
-						review_text = row[text_ix]
-						row[text_ix] = self.process_text(review_text)
-						row = [field.encode('ascii', 'ignore') for field in row]
-						records += [row]
-						if len(records)%20000 == 0:
-							chunkNum += 1
-							writer.writerows(records)
-							print '{} seconds: completed {} rows'.format((dt.now() - time_start).seconds, chunkNum*chunkSize)
-							records = []
+						if row[businessID_ix] in self.restaurant_ids:
+							review_text = row[text_ix]
+							row[text_ix] = self.process_text(review_text)
+							row = [field.encode('ascii', 'ignore') for field in row]
+							records += [row]
+							if len(records)%chunkSize == 0:
+								chunkNum += 1
+								writer.writerows(records)
+								print '{} seconds: completed {} rows out of {} reviews'.format((dt.now() - time_start).seconds, chunkNum*chunkSize, i/2)
+								records = []
 				i += 1
 
 			if len(records) > 0:
 				writer.writerows(records)
+				print '{} seconds: completed {} rows out of {} reviews'.format((dt.now() - time_start).seconds, chunkNum*chunkSize+len(records), i/2)
 				
 			outputFile.close()
 
@@ -113,22 +121,23 @@ class reviewProcessor :
 if __name__ == "__main__":
 	review_fileName = '../Data/yelp_academic_dataset_review.json'
 
-	with open(review_fileName) as f:
-    	reviews = pd.DataFrame(json.loads(line) for line in f)
-    f.close()
+	if not path.exists('../Data/reviews.csv'):
+		print 'Loading json file into pandas dataframe...'
+		with open(review_fileName) as f:
+			reviews = pd.DataFrame(json.loads(line) for line in f)
+		f.close()
+		print 'Finished loading json file into pandas dataframe'
 
-    print 'Finished loading json file into pandas dataframe'
-    print 'Projecting relevant columns: review_id (index), business_id, stars, text, user_id...'
+		print 'Projecting relevant columns: review_id (index), business_id, stars, text, user_id...'
+		reviews = reviews.set_index(['review_id'])
+		reviews = reviews[['business_id', 'stars', 'text', 'user_id']]
 
-	reviews = reviews.set_index(['review_id'])
-	reviews = reviews[['business_id', 'stars', 'text', 'user_id']]
-
-	print 'Projection completed... starting write into csv file...'
-	reviews.to_csv('../Data/reviews.csv', sep='\t', encoding='utf-8', line_terminator='\nsen\n')
-	print 'Finished writing into csv file: ../Data/reviews.csv'
+		print 'Projection completed... starting write into csv file...'
+		reviews.to_csv('../Data/reviews.csv', sep='\t', encoding='utf-8', line_terminator='\nsen\n')
+		print 'Finished writing into csv file: ../Data/reviews.csv'
 
 	print 'Beginning processing of reviews to perform stemming and lemmatization of all words...'
 	review_fileName = '../Data/reviews.csv'
 	reviewer = reviewProcessor(review_fileName)
-	reviewer.process_save('../Data/stemmed_reviews.csv')
+	reviewer.process_save('../Data/processed_reviews.csv')
 	print 'Completed processing'
