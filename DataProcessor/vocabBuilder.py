@@ -10,9 +10,9 @@ def buildVocab(text):
 		if isinstance(entry, str)== False:
 			continue
 		for word in entry.split():
-			if word in vocab:
+			try:
 				vocab[word] += 1
-			else:
+			except:
 				vocab[word] = 1
 
 	filtered_vocab = {}
@@ -30,11 +30,14 @@ def bagOfWord(text,vocab_lookup):
 
 	counts = {}
 
-	for word in text.split():
-		if word in counts:
-			counts[word] += 1
-		elif word in vocab_lookup:
-			counts[word] = 1
+	try:
+		for word in text.split():
+			if word in counts:
+				counts[word] += 1
+			elif word in vocab_lookup:
+				counts[word] = 1
+	except:
+		print text
 
 	return ' '.join(str(vocab_lookup[word])+":"+str(counts[word]) for word in counts.iterkeys())
 
@@ -42,18 +45,28 @@ def bagOfWord(text,vocab_lookup):
 
 if __name__ == "__main__":
 
-	reviews =pd.read_csv('../Data/processed_reviews.csv',encoding="utf-8")
-	review_text = reviews['text'].apply(lambda row: str(row))
+	print 'Loading csv file into pandas dataframe...'
+	reviews =pd.read_csv('../Data/processed_reviews.csv')
+	reviews = reviews.set_index(['review_id'])
+	review_text = reviews['text']#.apply(lambda row: str(row))
+	print 'Finished loading'
 
+	print 'Building vocabulary...'
 	buildVocab(review_text)
+	print 'Complete'
 
+	print 'Loading dictionary...'
 	vocab_lookup = {}
 	with open('../Data/vocab.txt','r') as f:
 		for line in f.readlines():
 			lookup_int, key, __ = line.split(',')
 			vocab_lookup[key] = lookup_int
+	print 'Complete'
 
-	reviews['text'] = review_text.apply(lambda row: bagOfWord(str(row), vocab_lookup))
+	print 'Building bag of words...'
+	reviews['text'] = review_text.apply(lambda row: bagOfWord(row, vocab_lookup))
+	print 'Finished...'
 
-	reviews.to_csv('../Data/bow_reviews.csv',encoding='utf-8')
-
+	print 'Saving bag of words into file...'
+	reviews.to_csv('../Data/bow_reviews.csv')
+	print 'Process complete!'

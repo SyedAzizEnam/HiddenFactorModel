@@ -52,7 +52,8 @@ class reviewProcessor :
 							review_text = row[text_ix]
 							row[text_ix] = self.process_text(review_text)
 							row = [field.encode('ascii', 'ignore') for field in row]
-							records += [row]
+							if len(row[text_ix]) > 0:
+								records += [row]
 							if len(records)%chunkSize == 0:
 								print '{} seconds: completed {} rows'.format((dt.now() - time_start).seconds, len(records))
 				i += 1
@@ -101,7 +102,8 @@ class reviewProcessor :
 							review_text = row[text_ix]
 							row[text_ix] = self.process_text(review_text)
 							row = [field.encode('ascii', 'ignore') for field in row]
-							records += [row]
+							if len(row[text_ix]) > 0:
+								records += [row]
 							if len(records)%chunkSize == 0:
 								chunkNum += 1
 								writer.writerows(records)
