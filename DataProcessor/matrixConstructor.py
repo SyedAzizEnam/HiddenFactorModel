@@ -2,7 +2,6 @@ from scipy.sparse import lil_matrix, csr_matrix
 import numpy as np
 import pandas as pd
 import cPickle as pickle
-import sys
 
 review_fileName = '../Data/bow_reviews.csv'
 vocab_fileName = '../Data/vocab.txt'
@@ -41,9 +40,7 @@ class MatrixConstructor:
             self.user_dict[u_id] = index
 
         self.reviews = lil_matrix((self.n_businesses, n_words))
-        self.ratings = dict()
-        for u_id in xrange(self.n_users):
-            self.ratings[u_id] = dict()
+        self.ratings = lil_matrix((self.n_users, self.n_businesses))
 
     def get_reviews(self):
         for r_ix, review in enumerate(self.review_data['text']):
@@ -56,6 +53,7 @@ class MatrixConstructor:
                 self.reviews[b_ix, int(word[0])] += int(word[1])
 
     def get_ratings(self):
+        rating_counts = lil_matrix(self.ratings.shape)
         for r_ix, rating in enumerate(self.review_data['stars']):
             b_id = self.business_ids[r_ix]
             b_ix = self.business_dict[b_id]
@@ -63,13 +61,17 @@ class MatrixConstructor:
             u_id = self.user_ids[r_ix]
             u_ix = self.user_dict[u_id]
 
-            try:
-                prior_rating, prior_count = self.ratings[u_ix][b_ix]
+            if rating_counts[u_ix, b_ix] == 0:
+                rating_counts[u_ix, b_ix] = 1
+                self.ratings[u_ix, b_ix] = rating
+            else:
+                prior_rating = self.ratings[u_ix, b_ix]
+                prior_count = rating_counts[u_ix, b_ix]
                 new_count = prior_count+1
-                new_rating = (prior_rating*prior_count + int(rating)) / new_count
-                self.ratings[u_ix][b_ix] = (new_rating, new_count)
-            except KeyError:
-                self.ratings[u_ix][b_ix] = (int(rating), 1)
+                new_rating = (prior_rating*prior_count + rating)/new_count
+
+                rating_counts[u_ix, b_ix] = new_count
+                self.ratings[u_ix, b_ix] = new_rating
 
     def save_reviews(self, review_output_filename='../Data/reviews.npz'):
         self.reviews = csr_matrix(self.reviews)
@@ -77,10 +79,14 @@ class MatrixConstructor:
                  data=self.reviews.data, indices=self.reviews.indices, indptr=self.reviews.indptr,
                  shape=self.reviews.shape)
 
-    def save_ratings(self, ratings_output_filename='../Data/ratings.pkl'):
-        pickle.dump(self.ratings, open(ratings_output_filename, 'wb'))
+    def save_ratings(self, ratings_output_filename='../Data/ratings.npz'):
+        self.ratings = csr_matrix(self.ratings)
+        np.savez(open(ratings_output_filename, 'wb'),
+                 data=self.ratings.data, indices=self.ratings.indices, indptr=self.ratings.indptr,
+                 shape=self.ratings.shape)
 
-    def save_ids(self, business_output_filename='../Data/business_ids.pkl', user_output_filename='../Data/user_ids.pkl'):
+    def save_ids(self, business_output_filename='../Data/business_ids.pkl',
+                 user_output_filename='../Data/user_ids.pkl'):
         pickle.dump(self.business_dict, open(business_output_filename, 'wb'))
         pickle.dump(self.user_dict, open(user_output_filename, 'wb'))
 
