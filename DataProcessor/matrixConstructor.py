@@ -1,57 +1,104 @@
 from scipy.sparse import lil_matrix, csr_matrix
 import numpy as np
 import pandas as pd
+import cPickle as pickle
 import sys
+
+review_fileName = '../Data/bow_reviews.csv'
+vocab_fileName = '../Data/vocab.txt'
+n_reviews = 1363012
+n_words = 13249
 
 
 class MatrixConstructor:
+
     def __init__(self):
-        self.review_fileName = '../Data/bow_reviews.csv'
-        self.vocab_fileName = '../Data/vocab.txt'
-        self.n_docs = 1363012
-        self.n_words = 13249
-        self.review_data = lil_matrix((self.n_docs, self.n_words))
-        self.rating_data = np.ndarray([self.n_docs])
+        self.review_data = pd.read_csv(review_fileName)
+        print 'Finished loading data...'
 
-    def construct_matrix(self):
-        reviews = pd.read_csv(self.review_fileName)
-        for data in reviews.iterrows():
-            index = data[0]
-            rating = data[1]['stars']
-            review = data[1]['text'].split()
-            for word in review:
+        # Mapping all business_ids
+        self.business_ids = list()
+        for business in self.review_data['business_id']:
+            self.business_ids.append(business)
+        unique_business_ids = list(set(self.business_ids))
+        self.n_businesses = len(unique_business_ids)
+
+        self.business_dict = dict()
+        for index, b_id in enumerate(unique_business_ids):
+            self.business_dict[index] = b_id
+            self.business_dict[b_id] = index
+
+        # Mapping all user_ids
+        self.user_ids = list()
+        for user in self.review_data['user_id']:
+            self.user_ids.append(user)
+        unique_user_ids = list(set(self.user_ids))
+        self.n_users = len(unique_user_ids)
+
+        self.user_dict = dict()
+        for index, u_id in enumerate(unique_user_ids):
+            self.user_dict[index] = u_id
+            self.user_dict[u_id] = index
+
+        self.reviews = lil_matrix((self.n_businesses, n_words))
+        self.ratings = dict()
+        for u_id in xrange(self.n_users):
+            self.ratings[u_id] = dict()
+
+    def get_reviews(self):
+        for r_ix, review in enumerate(self.review_data['text']):
+            b_id = self.business_ids[r_ix]
+            b_ix = self.business_dict[b_id]
+
+            words = review.split()
+            for word in words:
                 word = word.split(':')
-                try:
-                    self.review_data[index, int(word[0])] += int(word[1])
-                    self.rating_data[index] = rating
-                except:
-                    print index, word
-                    sys.exit(1)
+                self.reviews[b_ix, int(word[0])] += int(word[1])
 
-    def save_review_matrix(self, output_filename):
-        self.review_data = csr_matrix(self.review_data)
-        np.savez(open(output_filename, 'wb'),
-                 data=self.review_data.data,
-                 indices=self.review_data.indices, indptr=self.review_data.indptr, shape=self.review_data.shape)
+    def get_ratings(self):
+        for r_ix, rating in enumerate(self.review_data['stars']):
+            b_id = self.business_ids[r_ix]
+            b_ix = self.business_dict[b_id]
 
-    def save_ratings_matrix(self, output_filename):
-        np.save(open(output_filename, 'wb'), self.rating_data)
+            u_id = self.user_ids[r_ix]
+            u_ix = self.user_dict[u_id]
 
+            try:
+                prior_rating, prior_count = self.ratings[u_ix][b_ix]
+                new_count = prior_count+1
+                new_rating = (prior_rating*prior_count + int(rating)) / new_count
+                self.ratings[u_ix][b_ix] = (new_rating, new_count)
+            except KeyError:
+                self.ratings[u_ix][b_ix] = (int(rating), 1)
+
+    def save_reviews(self, review_output_filename='../Data/reviews.npz'):
+        self.reviews = csr_matrix(self.reviews)
+        np.savez(open(review_output_filename, 'wb'),
+                 data=self.reviews.data, indices=self.reviews.indices, indptr=self.reviews.indptr,
+                 shape=self.reviews.shape)
+
+    def save_ratings(self, ratings_output_filename='../Data/ratings.pkl'):
+        pickle.dump(self.ratings, open(ratings_output_filename, 'wb'))
+
+    def save_ids(self, business_output_filename='../Data/business_ids.pkl', user_output_filename='../Data/user_ids.pkl'):
+        pickle.dump(self.business_dict, open(business_output_filename, 'wb'))
+        pickle.dump(self.user_dict, open(user_output_filename, 'wb'))
 
 if __name__ == '__main__':
-    print 'Loading data...'
+    print 'Loading data into memory...'
     mat_constr = MatrixConstructor()
-    print 'Finished loading!'
 
-    print 'Constructing matrices...'
-    mat_constr.construct_matrix()
-
+    print 'Constructing review matrix...'
+    mat_constr.get_reviews()
     print 'Saving review matrix...'
-    mat_constr.save_review_matrix('../Data/reviews.npz')
-    print 'Processing review matrix complete!'
+    mat_constr.save_reviews()
 
-    print 'Saving ratings matrix...'
-    mat_constr.save_ratings_matrix('../Data/ratings.npy')
-    print 'Processing ratings matrix complete!'
+    print 'Constructing ratings dictionary...'
+    mat_constr.get_ratings()
+    print 'Saving ratings dictionary...'
+    mat_constr.save_ratings()
 
-    print 'All data processed.'
+    print 'Saving id structures...'
+    mat_constr.save_ids()
+
+    print 'Processing complete!'
