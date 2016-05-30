@@ -8,10 +8,10 @@ class ReviewModel:
         self.data = DataLoader.review_data(reviews_filename)
 
         n_docs, n_vocab = self.data.shape
-        self.topic_model = np.zeros((n_topics, n_vocab))
-        self.topic_proportion = np.zeros((n_docs, n_topics))
+        self.phi = np.zeros((n_topics, n_vocab))
+        self.theta = np.zeros((n_docs, n_topics))
 
-        self.topic_assignment = list()
+        self.z = list()
         for doc_ix in xrange(n_docs):
             n_words = int(np.sum(self.data[doc_ix, :].toarray()))
-            self.topic_assignment.append(np.zeros(n_words, dtype=int))
+            self.z.append(np.zeros(n_words, dtype=int))
