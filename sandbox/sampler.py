@@ -2,11 +2,11 @@ import numpy as np
 from scipy.sparse import csr_matrix
 import random
 
-def loglikelihood(theta, phi, bow_reviews, topic_assingments):
+def loglikelihood(gamma, phi, bow_reviews, topic_assingments):
 	"""Computes likelihood of a corpus
 
 	Args:
-	theta: topic distributions per item. (IxK numpy array)
+	gamma: topic latent factors per item. (IxK numpy array)
 	phi: word distributions per topic. (KxV numpy array)
 	boW_reviews: BOW reviews in sparse matrix.
 	topic_assingments: topic assingments for each word in a review.
@@ -15,6 +15,11 @@ def loglikelihood(theta, phi, bow_reviews, topic_assingments):
 	Returns:
 	loglikelihood: The likelihood of the corpus
 	"""
+
+	theta = np.exp(gamma)
+	for i in xrange(gamma.shape[0]):		
+		theta[i,:] = theta[i,:]/theta[i,:].sum()
+
 	I = bow_reviews.getcol(0).toarray().size
 
 	All_loglikelihoods = []
@@ -29,7 +34,7 @@ def loglikelihood(theta, phi, bow_reviews, topic_assingments):
 
 		for word,topic in zip(words,topics):
 			#print theta[i,topic],phi[topic,word]
-			loglikelihood += np.log(theta[i,topic]*phi[topic,word])
+			loglikelihood += np.log(theta[i,topic])+np.log(phi[topic,word])
 
 		All_loglikelihoods.append(loglikelihood)
 
@@ -53,7 +58,10 @@ def sampleWithDistribution(p):
 	raise Exception("Uh Oh... selectWithDistribution with r value %f" %r)
 
 """
-def Gibbsampler():
+def Gibbsampler(boW_reviews):
+	"""
+
+	"""
 """
 
 def flatten_BOW(bow_review):
@@ -86,9 +94,7 @@ if __name__ == "__main__":
 	indices = np.array([0, 2, 2, 0, 1, 2])
 
 	bow_reviews = csr_matrix((data, indices, indptr), shape=(3, 3))
-	theta = np.random.rand(3,K)
-	for i in xrange(theta.shape[0]):
-		theta[i,:] = theta[i,:]/theta[i,:].sum()
+	gamma = np.random.rand(3,K)
 
 	phi = np.random.rand(K,3)
 	for i in xrange(phi.shape[0]):
@@ -103,9 +109,9 @@ if __name__ == "__main__":
 	"""
 	print bow_reviews.toarray()
 	print topic_assingments
-	print theta
+	print gamma
 	print phi
 	"""
-	print loglikelihood(theta, phi, bow_reviews,topic_assingments)
+	print loglikelihood(gamma, phi, bow_reviews,topic_assingments)
 
 
