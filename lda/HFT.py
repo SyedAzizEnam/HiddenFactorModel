@@ -1,5 +1,4 @@
 import numpy as np
-from scipy.sparse import lil_matrix
 
 from RatingModel import RatingModel
 from ReviewModel import ReviewModel

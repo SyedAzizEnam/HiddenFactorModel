@@ -5,8 +5,8 @@ import cPickle as pickle
 
 review_fileName = '../Data/bow_reviews.csv'
 vocab_fileName = '../Data/vocab.txt'
-n_reviews = 1363012
-n_words = 13249
+n_reviews = 306168
+n_words = 6875
 
 
 class MatrixConstructor:

@@ -20,7 +20,7 @@ class ReviewProcessor:
         self.lmtzr = nltk.stem.wordnet.WordNetLemmatizer()
         self.review_fileName = review_filename
         self.disk_engine = create_engine('sqlite:///..Data/yelp.db')
-        self.restaurant_ids = set([id.strip() for id in open('../Data/restaurant_business_ids.txt', 'rb')])
+        self.restaurant_ids = set([id.strip() for id in open('../Data/Phoenix_business_ids.txt', 'rb')])
 
     def process_text(self, sentence):
         sentence = nltk.word_tokenize(sentence.lower())  # Tokenize

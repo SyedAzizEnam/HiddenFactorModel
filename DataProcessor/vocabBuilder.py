@@ -2,8 +2,8 @@ import pandas as pd
 
 
 def buildVocab(text):
-    '''Takes a dataframe of texts and creates a vocab file
-	vocab.txt'''
+    """Takes a dataframe of texts and creates a vocab file
+    vocab.txt"""
 
     vocab = {}
     for entry in text:
