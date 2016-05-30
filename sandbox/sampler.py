@@ -2,7 +2,7 @@ import numpy as np
 from scipy.sparse import csr_matrix
 import random
 
-def loglikelihood(gamma, phi, bow_reviews, topic_assingments):
+def loglikelihood(gamma, kappa, phi, bow_reviews, topic_assingments):
 	"""Computes likelihood of a corpus
 
 	Args:
@@ -16,9 +16,8 @@ def loglikelihood(gamma, phi, bow_reviews, topic_assingments):
 	loglikelihood: The likelihood of the corpus
 	"""
 
-	theta = np.exp(gamma)
-	for i in xrange(gamma.shape[0]):		
-		theta[i,:] = theta[i,:]/theta[i,:].sum()
+	theta = np.exp(kappa*gamma)
+	theta = theta/theta.sum(axis=1)[:,None]
 
 	I = bow_reviews.getcol(0).toarray().size
 
@@ -57,12 +56,41 @@ def sampleWithDistribution(p):
 			return i
 	raise Exception("Uh Oh... selectWithDistribution with r value %f" %r)
 
-"""
-def Gibbsampler(boW_reviews):
+
+def Gibbsampler(boW_reviews, phi, gamma):
+	"""
+	Resamples the topic_assingments accross the entires corpus
+
+	Args:
+	boW_reviews: reviews in bow format
+	gamma: topic latent factors per item. (IxK numpy array)
+	phi: word distributions per topic. (KxV numpy array)
+
+	Returns: 
+	new_topic_assingments: list of numpy arrays
 	"""
 
-	"""
-"""
+	theta = np.exp(kappa*gamma)
+	theta = theta/theta.sum(axis=1)[:,None]
+
+	I = bow_reviews.getcol(0).toarray().size
+
+	new_topic_assingments = []
+	
+	for i in xrange(I):
+		review = bow_reviews.getrow(i).toarray()[0]
+		words = flatten_BOW(review)
+		topic_assingments = []
+		
+		for word in words:
+			p = theta[i,:]*phi[:,word]
+			p = p/p.sum()
+			topic_assingments.append(sampleWithDistribution(p))
+		
+		topic_assingments = np.array(topic_assingments)
+		new_topic_assingments.append(topic_assingments)
+	
+	return new_topic_assingments
 
 def flatten_BOW(bow_review):
 	""" Flattens the bag of words array so that it is the
@@ -106,12 +134,13 @@ if __name__ == "__main__":
 		topics = np.random.randint(K, size=bow_reviews.getrow(i).sum())
 		topic_assingments.append(topics)
 	
-	"""
+	kappa = 1.0
+
 	print bow_reviews.toarray()
 	print topic_assingments
 	print gamma
 	print phi
-	"""
-	print loglikelihood(gamma, phi, bow_reviews,topic_assingments)
 
+	print loglikelihood(gamma, kappa, phi, bow_reviews,topic_assingments)
+	print Gibbsampler(bow_reviews, phi, gamma)
 
