@@ -38,3 +38,77 @@ class ReviewModel:
             n_words = int(np.sum(data_review))
             self.z.append(np.zeros(n_words, dtype=int))
             self.reviews.append(flatten_bow(data_review))
+
+
+    def loglikelihood(self):
+        """Computes likelihood of a corpus
+
+        Returns
+        -------
+        loglikelihood: The loglikelihood of the entire corpus
+        """
+
+        All_loglikelihoods = []
+
+        for i in xrange(self.n_docs):
+            
+            words = self.reviews[i]
+            topics = self.z[i]
+            loglikelihood = 0
+
+            for word,topic in zip(words,topics):
+                #print theta[i,topic],phi[topic,word]
+                loglikelihood += np.log(self.theta[i,topic])+np.log(self.phi[topic,word])
+
+            All_loglikelihoods.append(loglikelihood)
+
+        return sum(All_loglikelihoods)
+
+    def Gibbsampler(self):
+        """
+        Resamples the topic_assingments accross the entires corpus
+
+        Returns: 
+        new_topic_assingments: list of numpy arrays
+        """
+
+        new_topic_assingments = []
+        
+        for i in xrange(self.n_docs):
+            
+            words = self.reviews[i]
+            topic_assingments = []
+            
+            for word in words:
+                p = self.theta[i,:]*phi[:,word]
+                p = p/p.sum()
+                topic_assingments.append(sampleWithDistribution(p))
+            
+            topic_assingments = np.array(topic_assingments)
+            new_topic_assingments.append(topic_assingments)
+
+
+        #self.z = new_topic_assingments
+        return new_topic_assingments
+
+    def sampleWithDistribution(p):
+        """ Sampler that samples with respect to distribution p
+
+        Parameters
+        ----------
+        p : numpy array
+
+        Returns
+        -------
+        i: index of sampled value
+        """
+        r = random.random()  # Rational number between 0 and 1
+        
+        for i in xrange(len(p)):
+            r = r - p[i]
+            if r<=0:
+                return i
+        raise Exception("Uh Oh... selectWithDistribution with r value %f" %r)
+
+
+
