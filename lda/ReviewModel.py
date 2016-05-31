@@ -1,4 +1,6 @@
 import numpy as np
+from scipy.sparse import csr_matrix
+import random
 from DataProcessor import DataLoader
 
 
@@ -48,7 +50,7 @@ class ReviewModel:
         loglikelihood: The loglikelihood of the entire corpus
         """
 
-        All_loglikelihoods = []
+        All_loglikelihoods = list()
 
         for i in xrange(self.n_docs):
             
@@ -72,7 +74,7 @@ class ReviewModel:
         new_topic_assingments: list of numpy arrays
         """
 
-        new_topic_assingments = []
+        new_topic_assingments = list()
         
         for i in xrange(self.n_docs):
             
@@ -82,7 +84,7 @@ class ReviewModel:
             for word in words:
                 p = self.theta[i,:]*phi[:,word]
                 p = p/p.sum()
-                topic_assingments.append(sampleWithDistribution(p))
+                topic_assingments.append(self.sampleWithDistribution(p))
             
             topic_assingments = np.array(topic_assingments)
             new_topic_assingments.append(topic_assingments)
@@ -91,7 +93,7 @@ class ReviewModel:
         #self.z = new_topic_assingments
         return new_topic_assingments
 
-    def sampleWithDistribution(p):
+    def sampleWithDistribution(self, p):
         """ Sampler that samples with respect to distribution p
 
         Parameters
@@ -109,6 +111,3 @@ class ReviewModel:
             if r<=0:
                 return i
         raise Exception("Uh Oh... selectWithDistribution with r value %f" %r)
-
-
-
