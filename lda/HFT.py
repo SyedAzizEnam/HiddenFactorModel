@@ -22,3 +22,8 @@ class HFT:
             for word, topic in zip(review, topics):
                 frequencies[topic, word] += 1
         return frequencies
+    """
+    def grad_alpha(self):
+
+    def grad_phi(self):
+    """

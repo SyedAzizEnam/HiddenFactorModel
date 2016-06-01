@@ -14,8 +14,9 @@ class RatingModel:
         self.gamma_user = np.zeros((n_users, n_hidden_factors))
         self.gamma_item = np.zeros((n_items, n_hidden_factors))
 
+
     def get_rating_error(self):
         rec = self.alpha + self.beta_user[:, None] + \
               self.beta_item + np.dot(self.gamma_user, self.gamma_item.transpose())
         corpus_ix = self.data.nonzero()
-        return np.sum(np.square(rec[corpus_ix] - self.data[corpus_ix]))
+        return np.sum(np.square(self.rec[corpus_ix] - self.data[corpus_ix]))
