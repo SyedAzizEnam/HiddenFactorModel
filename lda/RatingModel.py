@@ -23,4 +23,4 @@ class RatingModel:
 
     def get_rating_error(self):
         corpus_ix = self.data.nonzero()
-        return np.sum(np.square(self.predicted_rating[corpus_ix] - self.data[corpus_ix]))
+        return np.sum(np.square(self.predicted_rating - self.data))
