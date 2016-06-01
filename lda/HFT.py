@@ -32,3 +32,10 @@ class HFT:
     def get_gamma_user_gradients(self):
         return 2 * np.dot((self.rating_model.predicted_rating - self.rating_model.data),
                           self.rating_model.gamma_item)
+
+    def get_alpha_gradient(self):
+        return 2*np.sum(self.rating_model.predicted_rating - self.rating_model.data)
+
+    def get_phi_gradient(self):
+        return np.divide(self.get_word_topic_frequencies(), self.review_model.phi) 
+
