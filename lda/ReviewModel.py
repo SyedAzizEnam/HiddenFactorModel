@@ -33,6 +33,9 @@ class ReviewModel:
         self.phi = np.zeros((n_topics, self.n_vocab))
         self.theta = np.zeros((self.n_docs, n_topics))
 
+        self.topic_frequencies = np.zeros((self.n_docs, self.n_topics))
+        self.word_topic_frequencies = np.zeros((self.n_vocab, self.n_topics))
+
         self.z = list()
         self.reviews = list()
         for doc_ix in xrange(self.n_docs):
@@ -57,11 +60,10 @@ class ReviewModel:
             topics = self.z[i]
             loglikelihood = 0
 
-            for word,topic in zip(words,topics):
-                # print theta[i,topic],phi[topic,word]
-                loglikelihood += np.log(self.theta[i,topic])+np.log(self.phi[topic,word])
+            loglikelihood = np.log(self.theta[([i]*len(topics),topics)]) + \
+                              np.log(self.phi[(topics,words)])
 
-            All_loglikelihoods.append(loglikelihood)
+            All_loglikelihoods.append(np.sum(loglikelihood))
 
         return sum(All_loglikelihoods)
 
@@ -74,6 +76,9 @@ class ReviewModel:
         """
 
         new_topic_assingments = list()
+
+        self.topic_frequencies = np.zeros((self.n_docs, self.n_topics))
+        self.word_topic_frequencies = np.zeros((self.n_vocab, self.n_topics))
         
         for i in xrange(self.n_docs):
             
@@ -83,7 +88,11 @@ class ReviewModel:
             for word in words:
                 p = self.theta[i, :]*self.phi[:, word]
                 p = p/p.sum()
-                topic_assingments.append(self.sampleWithDistribution(p))
+                new_topic = self.sampleWithDistribution(p)
+                topic_assingments.append(new_topic)
+
+                self.topic_frequencies[i,new_topic] += 1.0
+                self.word_topic_frequencies[word, new_topic] += 1.0
             
             topic_assingments = np.array(topic_assingments)
             new_topic_assingments.append(topic_assingments)

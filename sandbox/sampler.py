@@ -32,6 +32,11 @@ def loglikelihood(theta, phi, bow_reviews, topic_assingments):
 			#print theta[i,topic],phi[topic,word]
 			loglikelihood += np.log(theta[i,topic])+np.log(phi[topic,word])
 
+		loglikelihoodv2 = np.log(theta[([i]*len(topics),topics)]) + \
+			              np.log(phi[(topics,words)])
+
+		loglikelihoodv2 = np.sum(loglikelihoodv2)		
+
 		All_loglikelihoods.append(loglikelihood)
 
 	return sum(All_loglikelihoods)
