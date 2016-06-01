@@ -40,3 +40,9 @@ class HFT:
             kappa_gradient += np.sum(self.rating_model.gamma_item[b_ix, topics] *
                                      (1 - self.review_model.theta[b_ix, topics]))
             return kappa_gradient
+
+    def get_alpha_gradient(self):
+        return 2*np.sum(self.rating_model.predicted_rating - self.rating_model.data)
+
+    def get_phi_gradient(self):
+        return np.divide(self.get_word_topic_frequencies(), self.review_model.phi)
