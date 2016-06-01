@@ -39,7 +39,6 @@ class ReviewModel:
             self.z.append(np.zeros(n_words, dtype=int))
             self.reviews.append(flatten_bow(data_review))
 
-
     def loglikelihood(self):
         """Computes likelihood of a corpus
 
@@ -57,7 +56,7 @@ class ReviewModel:
             loglikelihood = 0
 
             for word,topic in zip(words,topics):
-                #print theta[i,topic],phi[topic,word]
+                # print theta[i,topic],phi[topic,word]
                 loglikelihood += np.log(self.theta[i,topic])+np.log(self.phi[topic,word])
 
             All_loglikelihoods.append(loglikelihood)
@@ -87,8 +86,7 @@ class ReviewModel:
             topic_assingments = np.array(topic_assingments)
             new_topic_assingments.append(topic_assingments)
 
-
-        #self.z = new_topic_assingments
+        # self.z = new_topic_assingments
         return new_topic_assingments
 
     def sampleWithDistribution(p):

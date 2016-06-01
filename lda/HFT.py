@@ -12,7 +12,7 @@ class HFT:
         self.kappa = 0.0
 
     def get_theta(self):
-        self.review_model.theta = np.exp(self.kappa*self.rating_model.gamma_item)
+        self.review_model.theta = np.exp(self.kappa * self.rating_model.gamma_item)
         partition = np.sum(self.review_model.theta, axis=1)
         self.review_model.theta /= partition[:, None]
 
@@ -22,3 +22,13 @@ class HFT:
             for word, topic in zip(review, topics):
                 frequencies[topic, word] += 1
         return frequencies
+
+    def get_beta_item_gradients(self):
+        return 2 * np.sum(self.rating_model.predicted_rating - self.rating_model.data, axis=0)
+
+    def get_beta_user_gradients(self):
+        return 2 * np.sum(self.rating_model.predicted_rating - self.rating_model.data, axis=1)
+
+    def get_gamma_user_gradients(self):
+        return 2 * np.dot((self.rating_model.predicted_rating - self.rating_model.data),
+                          self.rating_model.gamma_item)
