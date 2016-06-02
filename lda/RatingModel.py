@@ -1,5 +1,6 @@
 import numpy as np
 from DataProcessor import DataLoader
+from scipy.sparse import csr_matrix
 
 
 class RatingModel:
