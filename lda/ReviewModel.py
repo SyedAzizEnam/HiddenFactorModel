@@ -30,8 +30,12 @@ class ReviewModel:
         data = DataLoader.review_data(reviews_filename)
         self.n_docs, self.n_vocab = data.shape
         self.n_topics = n_topics
-        self.phi = np.zeros((n_topics, self.n_vocab))
-        self.theta = np.zeros((self.n_docs, n_topics))
+
+        self.phi = np.random.rand((n_topics, self.n_vocab))
+        self.phi = self.phi/self.phi.sum(axis=1)[:,None]
+
+        self.theta = np.random.rand((self.n_docs, n_topics))
+        self.theta = self.theta/self.theta.sum(axis=1)[:,None]
 
         self.topic_frequencies = np.zeros((self.n_docs, self.n_topics))
         self.word_topic_frequencies = np.zeros((self.n_vocab, self.n_topics))
