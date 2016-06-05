@@ -1,6 +1,5 @@
 import numpy as np
 from DataProcessor import DataLoader
-from scipy.sparse import csr_matrix
 
 
 class RatingModel:
@@ -11,17 +10,21 @@ class RatingModel:
         self.corpus_ix = (self.data > 0).toarray()
 
         self.alpha = 0.0
-        self.beta_user = np.zeros(n_users)
-        self.beta_item = np.zeros(n_items)
-        self.gamma_user = np.zeros((n_users, n_hidden_factors))
-        self.gamma_item = np.zeros((n_items, n_hidden_factors))
-        self.predicted_rating = None
+        self.beta_user = np.random.rand(n_users)
+        self.beta_item = np.random.rand(n_items)
+        self.gamma_user = np.random.rand(n_users, n_hidden_factors)
+        self.gamma_item = np.random.rand(n_items, n_hidden_factors)
+        self.predicted_rating = np.zeros((n_users, n_items))
 
     def get_predicted_ratings(self):
-        self.predicted_rating = self.alpha + self.beta_user[:, None] + \
-              self.beta_item + np.dot(self.gamma_user, self.gamma_item.transpose())
+        # self.predicted_rating = self.alpha + self.beta_user[:, None] + \
+        #       self.beta_item + np.dot(self.gamma_user, self.gamma_item.transpose())
+        # self.predicted_rating[np.logical_not(self.corpus_ix)] = 0
+        ix = self.data.nonzero()
+        for u, i in zip(ix[0], ix[1]):
+            self.predicted_rating[u, i] = np.dot(self.gamma_user[u, :], self.gamma_item[i, :])
+        self.predicted_rating += self.alpha + self.beta_user[:, None] + self.beta_item
         self.predicted_rating[np.logical_not(self.corpus_ix)] = 0
 
     def get_rating_error(self):
-        corpus_ix = self.data.nonzero()
         return np.sum(np.square(self.predicted_rating - self.data))
