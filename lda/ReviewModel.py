@@ -2,6 +2,9 @@ import numpy as np
 import sys
 import random
 from DataProcessor import DataLoader
+from multiprocessing import Pool
+
+pool = Pool()
 
 
 def flatten_bow(bow_review):
@@ -25,8 +28,32 @@ def flatten_bow(bow_review):
     return np.array(words)
 
 
+def sampleWithDistribution(self, p):
+    """ Sampler that samples with respect to distribution p
+
+    Parameters
+    ----------
+    p : numpy array
+
+    Returns
+    -------
+    i: index of sampled value
+    """
+    if len(p) != self.n_topics:
+        print 'DeadPool happened!'
+        sys.exit(1)
+
+    r = random.random()  # Rational number between 0 and 1
+
+    for i in xrange(len(p)):
+        r = r - p[i]
+        if r <= 0:
+            return i
+    raise Exception("Uh Oh... selectWithDistribution with r value %f" % r)
+
+
 class ReviewModel:
-    def __init__(self, reviews_filename='../Data/reviews.npz', n_topics=10):
+    def __init__(self, reviews_filename='../Data/reviews.npz', n_topics=10, flag='iterate'):
         data = DataLoader.review_data(reviews_filename)
         self.n_docs, self.n_vocab = data.shape
         self.n_topics = n_topics
@@ -47,6 +74,7 @@ class ReviewModel:
             n_words = int(np.sum(data_review))
             self.z.append(np.zeros(n_words, dtype=int))
             self.reviews.append(flatten_bow(data_review))
+        self.flag = flag
 
     def loglikelihood(self):
         """Computes likelihood of a corpus
@@ -86,42 +114,26 @@ class ReviewModel:
         for i in xrange(self.n_docs):
             
             words = self.reviews[i]
+            # p = self.theta[i, :] * self.phi[:, words]
+            # p /= np.sum(p, axis=1)[:, None]
+            # p = p.tolist()
+            # topic_assignments = pool.map(sampleWithDistribution, p)
+
             topic_assingments = []
-            
+
             for word in words:
                 p = self.theta[i, :]*self.phi[:, word]
                 p = p/p.sum()
-                new_topic = self.sampleWithDistribution(p)
+                if self.flag == 'iterate':
+                    new_topic = sampleWithDistribution(p)
+                else:
+                    new_topic = np.where(random.random() - np.cumsum(p) <= 0)[0][0]
                 topic_assingments.append(new_topic)
 
                 self.topic_frequencies[i,new_topic] += 1.0
-                try:
-                    self.word_topic_frequencies[new_topic, word] += 1.0
-                except:
-                    print new_topic, word
-                    print self.word_topic_frequencies.shape
-                    sys.exit(1)
+                self.word_topic_frequencies[new_topic, word] += 1.0
             
             topic_assingments = np.array(topic_assingments)
             new_topic_assingments.append(topic_assingments)
 
         self.z = new_topic_assingments
-
-    def sampleWithDistribution(self, p):
-        """ Sampler that samples with respect to distribution p
-
-        Parameters
-        ----------
-        p : numpy array
-
-        Returns
-        -------
-        i: index of sampled value
-        """
-        r = random.random()  # Rational number between 0 and 1
-        
-        for i in xrange(len(p)):
-            r = r - p[i]
-            if r <= 0:
-                return i
-        raise Exception("Uh Oh... selectWithDistribution with r value %f" %r)

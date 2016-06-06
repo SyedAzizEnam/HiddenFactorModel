@@ -6,11 +6,11 @@ from ReviewModel import ReviewModel
 
 
 class HFT:
-    def __init__(self, ratings_filename='../Data/ratings.npz', reviews_filename='../Data/reviews.npz', n_hidden=10):
+    def __init__(self, ratings_filename='../Data/ratings.npz', reviews_filename='../Data/reviews.npz', n_hidden=10, flag='iterate'):
         self.rating_model = RatingModel(ratings_filename, n_hidden)
         self.rating_model.get_predicted_ratings()
 
-        self.review_model = ReviewModel(reviews_filename, n_hidden)
+        self.review_model = ReviewModel(reviews_filename, n_hidden, flag)
         self.review_model.Gibbsampler()
 
         self.kappa = 0.0
@@ -70,6 +70,7 @@ class HFT:
 if __name__ == '__main__':
     print 'Running main method...'
 
+    print 'Running for iterate...'
     start_time = dt.now()
     hft = HFT(ratings_filename = 'Data/ratings.npz', reviews_filename = 'Data/reviews.npz')
     print 'Finished loading model in', (dt.now() - start_time).seconds, 'seconds'
@@ -82,9 +83,72 @@ if __name__ == '__main__':
     hft.rating_model.get_predicted_ratings()
     print 'Finished predicting new ratings in', (dt.now() - start_time).seconds, 'seconds'
 
+    # start_time = dt.now()
+    # hft.review_model.Gibbsampler()
+    # print 'Finished performing Gibbs sampling in', (dt.now() - start_time).seconds, 'seconds'
+
     start_time = dt.now()
-    hft.review_model.Gibbsampler()
-    print 'Finished performing Gibbs sampling in', (dt.now() - start_time).seconds, 'seconds'
+    l = hft.review_model.loglikelihood()
+    print 'Finished calulating log-likelihood in', (dt.now() - start_time).seconds, 'seconds'
+
+    print 'Running for vectorize...'
+    start_time = dt.now()
+    hft = HFT(ratings_filename='Data/ratings.npz', reviews_filename='Data/reviews.npz', flag='vector')
+    print 'Finished loading model in', (dt.now() - start_time).seconds, 'seconds'
+
+    start_time = dt.now()
+    grads = hft.get_gradients()
+    print 'Finished calculating gradients in', (dt.now() - start_time).seconds, 'seconds'
+
+    start_time = dt.now()
+    hft.rating_model.get_predicted_ratings()
+    print 'Finished predicting new ratings in', (dt.now() - start_time).seconds, 'seconds'
+
+    # start_time = dt.now()
+    # hft.review_model.Gibbsampler()
+    # print 'Finished performing Gibbs sampling in', (dt.now() - start_time).seconds, 'seconds'
+
+    start_time = dt.now()
+    l = hft.review_model.loglikelihood()
+    print 'Finished calulating log-likelihood in', (dt.now() - start_time).seconds, 'seconds'
+
+    print 'Running for iterate...'
+    start_time = dt.now()
+    hft = HFT(ratings_filename='Data/ratings.npz', reviews_filename='Data/reviews.npz')
+    print 'Finished loading model in', (dt.now() - start_time).seconds, 'seconds'
+
+    start_time = dt.now()
+    grads = hft.get_gradients()
+    print 'Finished calculating gradients in', (dt.now() - start_time).seconds, 'seconds'
+
+    start_time = dt.now()
+    hft.rating_model.get_predicted_ratings()
+    print 'Finished predicting new ratings in', (dt.now() - start_time).seconds, 'seconds'
+
+    # start_time = dt.now()
+    # hft.review_model.Gibbsampler()
+    # print 'Finished performing Gibbs sampling in', (dt.now() - start_time).seconds, 'seconds'
+
+    start_time = dt.now()
+    l = hft.review_model.loglikelihood()
+    print 'Finished calulating log-likelihood in', (dt.now() - start_time).seconds, 'seconds'
+
+    print 'Running for vectorize...'
+    start_time = dt.now()
+    hft = HFT(ratings_filename='Data/ratings.npz', reviews_filename='Data/reviews.npz', flag='vector')
+    print 'Finished loading model in', (dt.now() - start_time).seconds, 'seconds'
+
+    start_time = dt.now()
+    grads = hft.get_gradients()
+    print 'Finished calculating gradients in', (dt.now() - start_time).seconds, 'seconds'
+
+    start_time = dt.now()
+    hft.rating_model.get_predicted_ratings()
+    print 'Finished predicting new ratings in', (dt.now() - start_time).seconds, 'seconds'
+
+    # start_time = dt.now()
+    # hft.review_model.Gibbsampler()
+    # print 'Finished performing Gibbs sampling in', (dt.now() - start_time).seconds, 'seconds'
 
     start_time = dt.now()
     l = hft.review_model.loglikelihood()
