@@ -1,10 +1,7 @@
 import numpy as np
-import sys
 import random
+import sys
 from DataProcessor import DataLoader
-from multiprocessing import Pool
-
-pool = Pool()
 
 
 def flatten_bow(bow_review):
@@ -28,7 +25,7 @@ def flatten_bow(bow_review):
     return np.array(words)
 
 
-def sampleWithDistribution(self, p):
+def sampleWithDistribution(p):
     """ Sampler that samples with respect to distribution p
 
     Parameters
@@ -39,10 +36,6 @@ def sampleWithDistribution(self, p):
     -------
     i: index of sampled value
     """
-    if len(p) != self.n_topics:
-        print 'DeadPool happened!'
-        sys.exit(1)
-
     r = random.random()  # Rational number between 0 and 1
 
     for i in xrange(len(p)):
@@ -53,7 +46,7 @@ def sampleWithDistribution(self, p):
 
 
 class ReviewModel:
-    def __init__(self, reviews_filename='../Data/reviews.npz', n_topics=10, flag='iterate'):
+    def __init__(self, reviews_filename='../Data/reviews.npz', n_topics=10):
         data = DataLoader.review_data(reviews_filename)
         self.n_docs, self.n_vocab = data.shape
         self.n_topics = n_topics
@@ -74,7 +67,6 @@ class ReviewModel:
             n_words = int(np.sum(data_review))
             self.z.append(np.zeros(n_words, dtype=int))
             self.reviews.append(flatten_bow(data_review))
-        self.flag = flag
 
     def loglikelihood(self):
         """Computes likelihood of a corpus
@@ -106,34 +98,54 @@ class ReviewModel:
         new_topic_assingments: list of numpy arrays
         """
 
-        new_topic_assingments = list()
+        new_topic_assignments = list()
 
-        self.topic_frequencies = np.zeros((self.n_docs, self.n_topics))
+        self.topic_frequencies.fill(0)
         self.word_topic_frequencies.fill(0)
+
+        # np_topic_freq = np.zeros((self.n_docs, self.n_topics))
+        # np_word_topic_freq = np.zeros((self.n_topics, self.n_vocab))
         
         for i in xrange(self.n_docs):
             
             words = self.reviews[i]
-            # p = self.theta[i, :] * self.phi[:, words]
-            # p /= np.sum(p, axis=1)[:, None]
-            # p = p.tolist()
-            # topic_assignments = pool.map(sampleWithDistribution, p)
 
-            topic_assingments = []
+            p = self.theta[i, :] * self.phi[:, words].transpose()
+            p /= np.sum(p, axis=1)[:, None]
+            p = p.tolist()
 
-            for word in words:
-                p = self.theta[i, :]*self.phi[:, word]
-                p = p/p.sum()
-                if self.flag == 'iterate':
-                    new_topic = sampleWithDistribution(p)
-                else:
-                    new_topic = np.where(random.random() - np.cumsum(p) <= 0)[0][0]
-                topic_assingments.append(new_topic)
+            topic_assignments = map(sampleWithDistribution, p)
 
-                self.topic_frequencies[i,new_topic] += 1.0
-                self.word_topic_frequencies[new_topic, word] += 1.0
-            
-            topic_assingments = np.array(topic_assingments)
-            new_topic_assingments.append(topic_assingments)
+            np.add.at(self.topic_frequencies[i], topic_assignments, 1)
+            np.add.at(self.word_topic_frequencies, [topic_assignments, words], 1)
 
-        self.z = new_topic_assingments
+            # topic_assignments = []
+            # for word, r in zip(words, rands):
+            #     p = self.theta[i, :]*self.phi[:, word]
+            #     p = p/p.sum()
+            #     new_topic = sampleWithDistribution(r, p)
+            #     topic_assignments.append(new_topic)
+            #
+            #     self.topic_frequencies[i, new_topic] += 1.0
+            #     self.word_topic_frequencies[new_topic, word] += 1.0
+            #
+            # for m, t in zip(map_topic_assignments, topic_assignments):
+            #     if t != m:
+            #         print 'ERROR in Sampling'
+            #         sys.exit(1)
+            #
+            # if np.sum(np_topic_freq-self.topic_frequencies) != 0:
+            #     print 'ERROR in topic freqs'
+            #     print i
+            #     print np.sum(np_topic_freq-self.topic_frequencies)
+            #     sys.exit(1)
+            #
+            # if np.sum(np_word_topic_freq - self.word_topic_frequencies) != 0:
+            #     print 'ERROR in word_topic_freqs'
+            #     print i
+            #     print np.sum(np_word_topic_freq - self.word_topic_frequencies)
+            #     sys.exit(1)
+
+            new_topic_assignments.append(np.array(topic_assignments))
+
+        self.z = new_topic_assignments
