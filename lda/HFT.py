@@ -13,7 +13,7 @@ class HFT:
         self.review_model = ReviewModel(reviews_filename, n_hidden)
         self.review_model.Gibbsampler()
 
-        self.kappa = 0.0
+        self.kappa = np.random.uniform()
         self.mu = 1.0
 
     def get_theta(self):
@@ -21,34 +21,52 @@ class HFT:
         partition = np.sum(self.review_model.theta, axis=1)
         self.review_model.theta /= partition[:, None]
 
-    # def get_word_topic_frequencies(self):
-    #     frequencies = np.ndarray((self.review_model.n_topics, self.review_model.n_vocab), dtype=int)
-    #     for review, topics in zip(self.review_model.reviews, self.review_model.z):
-    #         for word, topic in zip(review, topics):
-    #             frequencies[topic, word] += 1
-    #     return frequencies
+    def flatten(self):
+        return np.concatenate((np.array([self.rating_model.alpha]),
+                               self.rating_model.beta_user,
+                               self.rating_model.beta_item,
+                               self.rating_model.gamma_user.flatten(),
+                               self.rating_model.gamma_item.flatten(),
+                               self.review_model.phi.flatten(),
+                               np.array([self.kappa])))
 
-    # def get_beta_item_gradients(self, rating_loss):
-    #     return 2 * np.sum(rating_loss, axis=0)
-    #
-    # def get_beta_user_gradients(self, rating_loss):
-    #     return 2 * np.sum(rating_loss, axis=1)
-    #
-    # def get_gamma_user_gradients(self, rating_loss):
-    #     return 2 * np.dot(rating_loss, self.rating_model.gamma_item)
-    #
-    # def get_gamma_item_gradients(self, rating_loss, review_loss):
-    #     return 2 * np.dot(rating_loss,
-    #                       self.rating_model.gamma_item) - self.mu * self.kappa * review_loss
-    #
-    # def get_alpha_gradient(self, rating_loss):
-    #     return 2 * np.sum(rating_loss)
-    #
-    # def get_phi_gradients(self):
-    #     return np.divide(self.get_word_topic_frequencies(), self.review_model.phi)
-    #
-    # def get_kappa_gradient(self, review_loss):
-    #     return np.sum(self.rating_model.gamma_item * review_loss)
+    def structure(self, array):
+        param_list = list()
+        offset = 0
+
+        # alpha
+        param_list += [array[0]]
+        offset += 1
+
+        # beta_user
+        ptr = offset + self.rating_model.n_users
+        param_list += [array[offset:ptr]]
+        offset = ptr
+
+        # beta_item
+        ptr = offset + self.rating_model.n_items
+        param_list += [array[offset:ptr]]
+        offset = ptr
+
+        # gamma_user
+        ptr = offset + self.rating_model.n_users*self.rating_model.n_hidden_factors
+        param_list += [array[offset:ptr].reshape(self.rating_model.n_users, self.rating_model.n_hidden_factors)]
+        offset = ptr
+
+        # gamma_item
+        ptr = offset + self.rating_model.n_items*self.rating_model.n_hidden_factors
+        param_list += [array[offset:ptr].reshape(self.rating_model.n_items, self.rating_model.n_hidden_factors)]
+        offset = ptr
+
+        # phi
+        ptr = offset + self.review_model.n_topics*self.review_model.n_vocab
+        param_list += [array[offset:ptr].reshape(self.review_model.n_topics, self.review_model.n_vocab)]
+        offset = ptr
+
+        # kappa
+        param_list += [array[offset]]
+
+        return tuple(param_list)
 
     def get_gradients(self):
         rating_loss = self.rating_model.predicted_rating - self.rating_model.data
@@ -67,11 +85,14 @@ class HFT:
         return [alpha_gradient, beta_user_gradients, beta_item_gradients,
                 gamma_user_gradients, gamma_item_gradients, phi_gradients, kappa_gradient]
 
+    def get_error(self):
+        return self.rating_model.get_rating_error() - self.mu * self.review_model.loglikelihood()
+
 if __name__ == '__main__':
     print 'Running main method...'
 
     start_time = dt.now()
-    hft = HFT(ratings_filename = 'Data/ratings.npz', reviews_filename = 'Data/reviews.npz')
+    hft = HFT(ratings_filename='Data/ratings.npz', reviews_filename='Data/reviews.npz')
     print 'Finished loading model in', (dt.now() - start_time).seconds, 'seconds'
 
     start_time = dt.now()
