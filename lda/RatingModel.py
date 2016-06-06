@@ -6,15 +6,16 @@ class RatingModel:
 
     def __init__(self, ratings_filename='../Data/ratings.npz', n_hidden_factors=10):
         self.data = DataLoader.ratings_data(ratings_filename)
-        n_users, n_items = self.data.shape
+        self.n_users, self.n_items = self.data.shape
+        self.n_hidden_factors = n_hidden_factors
         self.corpus_ix = (self.data > 0).toarray()
 
         self.alpha = 0.0
-        self.beta_user = np.random.rand(n_users)
-        self.beta_item = np.random.rand(n_items)
-        self.gamma_user = np.random.rand(n_users, n_hidden_factors)
-        self.gamma_item = np.random.rand(n_items, n_hidden_factors)
-        self.predicted_rating = np.zeros((n_users, n_items))
+        self.beta_user = np.random.rand(self.n_users)
+        self.beta_item = np.random.rand(self.n_items)
+        self.gamma_user = np.random.rand(self.n_users, self.n_hidden_factors)
+        self.gamma_item = np.random.rand(self.n_items, self.n_hidden_factors)
+        self.predicted_rating = np.zeros((self.n_users, self.n_items))
 
     def get_predicted_ratings(self):
         # self.predicted_rating = self.alpha + self.beta_user[:, None] + \

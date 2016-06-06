@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.sparse import csr_matrix
+import sys
 import random
 from DataProcessor import DataLoader
 
@@ -38,7 +38,7 @@ class ReviewModel:
         self.theta = self.theta/self.theta.sum(axis=1)[:, None]
 
         self.topic_frequencies = np.zeros((self.n_docs, self.n_topics))
-        self.word_topic_frequencies = np.zeros((self.n_vocab, self.n_topics))
+        self.word_topic_frequencies = np.zeros((self.n_topics, self.n_vocab))
 
         self.z = list()
         self.reviews = list()
@@ -62,7 +62,6 @@ class ReviewModel:
             
             words = self.reviews[i]
             topics = self.z[i]
-            loglikelihood = 0
 
             loglikelihood = np.log(self.theta[([i]*len(topics),topics)]) + \
                               np.log(self.phi[(topics,words)])
@@ -82,7 +81,7 @@ class ReviewModel:
         new_topic_assingments = list()
 
         self.topic_frequencies = np.zeros((self.n_docs, self.n_topics))
-        self.word_topic_frequencies = np.zeros((self.n_vocab, self.n_topics))
+        self.word_topic_frequencies.fill(0)
         
         for i in xrange(self.n_docs):
             
@@ -96,7 +95,12 @@ class ReviewModel:
                 topic_assingments.append(new_topic)
 
                 self.topic_frequencies[i,new_topic] += 1.0
-                self.word_topic_frequencies[word, new_topic] += 1.0
+                try:
+                    self.word_topic_frequencies[new_topic, word] += 1.0
+                except:
+                    print new_topic, word
+                    print self.word_topic_frequencies.shape
+                    sys.exit(1)
             
             topic_assingments = np.array(topic_assingments)
             new_topic_assingments.append(topic_assingments)
