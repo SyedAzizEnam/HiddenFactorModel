@@ -1,6 +1,7 @@
 import numpy as np
 from datetime import datetime as dt
 from scipy.optimize import minimize
+import sys
 
 from RatingModel import RatingModel
 from ReviewModel import ReviewModel
@@ -122,14 +123,31 @@ class HFT:
         alpha_gradient = 2 * np.sum(rating_loss)
         beta_item_gradients = 2 * np.ravel(np.sum(rating_loss, axis=0))
         beta_user_gradients = 2 * np.ravel(np.sum(rating_loss, axis=1))
-        gamma_user_gradients = 2 * np.dot(rating_loss, gamma_item)
-        gamma_item_gradients = 2 * np.dot(rating_loss.transpose(), gamma_user) - self.mu * kappa * review_loss
+        gamma_user_gradients = 2 * np.asarray(np.dot(rating_loss, gamma_item))
+        gamma_item_gradients = 2 * np.asarray(np.dot(rating_loss.transpose(), gamma_user)) - self.mu*kappa*review_loss
         phi_gradients = np.divide(self.review_model.word_topic_frequencies, phi)
         kappa_gradient = np.sum(gamma_item * review_loss)
 
+        # try:
         gradients = np.concatenate((np.array([alpha_gradient]), beta_user_gradients, beta_item_gradients,
                                    gamma_user_gradients.flatten(), gamma_item_gradients.flatten(),
                                    phi_gradients.flatten(), np.array([kappa_gradient])))
+        #     gradients = np.concatenate((np.array([alpha_gradient]),
+        #                                 beta_user_gradients,
+        #                                 beta_item_gradients,
+        #                                 gamma_user_gradients.flatten(),
+        #                                 gamma_item_gradients.flatten(),
+        #                                 phi_gradients.flatten(),
+        #                                 np.array([kappa_gradient])))
+        # except:
+        #     print np.array([alpha_gradient]).shape
+        #     print beta_user_gradients.shape
+        #     print beta_item_gradients.shape
+        #     print gamma_user_gradients.shape, gamma_user_gradients.flatten().shape
+        #     print gamma_item_gradients.shape, gamma_item_gradients.flatten().shape
+        #     print phi_gradients.shape, phi_gradients.flatten().shape
+        #     print np.array([kappa_gradient]).shape
+        #     sys.exit(1)
 
         return error, gradients
 
@@ -168,4 +186,3 @@ if __name__ == '__main__':
     start_time = dt.now()
     hft.update()
     print 'Finished updating parameters in', (dt.now() - start_time).seconds, 'seconds'
-
