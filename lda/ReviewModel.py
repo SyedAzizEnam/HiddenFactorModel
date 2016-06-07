@@ -128,3 +128,36 @@ class ReviewModel:
             new_topic_assignments.append(np.array(topic_assignments))
 
         self.z = new_topic_assignments
+
+    def Gibbsamplerv2(self):
+        """
+        Resamples the topic_assingments accross the entires corpus
+
+        Returns: 
+        new_topic_assingments: list of numpy arrays
+        """
+
+        new_topic_assignments = list()
+
+        self.topic_frequencies.fill(0)
+        self.word_topic_frequencies.fill(0)
+
+        self.z = map(self.updatetopics, zip(self.reviews, range(self.reviews)))
+
+    def updatetopics(self, review):
+
+        words = review[0]
+        i = review[1]
+
+        p = self.theta[i, :] * self.phi[:, words].transpose()
+        p /= np.sum(p, axis=1)[:, None]
+        p = p.tolist()
+
+        topic_assignments = map(sampleWithDistribution, p)
+
+        np.add.at(self.topic_frequencies[i], topic_assignments, 1)
+        np.add.at(self.word_topic_frequencies, [topic_assignments, words], 1)
+
+        return np.array(topic_assignments)
+
+

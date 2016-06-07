@@ -155,9 +155,13 @@ if __name__ == '__main__':
     hft.rating_model.get_predicted_ratings()
     print 'Finished predicting new ratings in', (dt.now() - start_time).seconds, 'seconds'
 
-    # start_time = dt.now()
-    # hft.review_model.Gibbsampler()
-    # print 'Finished performing Gibbs sampling in', (dt.now() - start_time).seconds, 'seconds'
+    start_time = dt.now()
+    hft.review_model.Gibbsampler()
+    print 'Finished performing Gibbs sampling in', (dt.now() - start_time).seconds, 'seconds'
+    
+    start_time = dt.now()
+    hft.review_model.Gibbsamplerv2()
+    print 'Finished performing Gibbs sampling in', (dt.now() - start_time).seconds, 'seconds'
 
     start_time = dt.now()
     l = hft.review_model.loglikelihood()
