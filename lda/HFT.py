@@ -104,7 +104,7 @@ class HFT:
 
         # get log_likelihood
         theta = np.exp(kappa * gamma_item)
-        theta /= np.sum(theta, axis=1)[:None]
+        theta /= np.sum(theta, axis=1)[:, None]
 
         log_likelihood = 0
         for i in xrange(self.review_model.n_docs):
@@ -127,9 +127,9 @@ class HFT:
         phi_gradients = np.divide(self.review_model.word_topic_frequencies, phi)
         kappa_gradient = np.sum(gamma_item * review_loss)
 
-        gradients = np.concatenate(np.array([alpha_gradient]), beta_user_gradients, beta_item_gradients,
-                                   gamma_user_gradients.flatten(), gamma_item_gradients.flatten,
-                                   phi_gradients.flatten(), np.array([kappa_gradient]))
+        gradients = np.concatenate((np.array([alpha_gradient]), beta_user_gradients, beta_item_gradients,
+                                   gamma_user_gradients.flatten(), gamma_item_gradients.flatten(),
+                                   phi_gradients.flatten(), np.array([kappa_gradient])))
 
         return error, gradients
 
@@ -157,15 +157,15 @@ if __name__ == '__main__':
     hft.rating_model.get_predicted_ratings()
     print 'Finished predicting new ratings in', (dt.now() - start_time).seconds, 'seconds'
 
-    start_time = dt.now()
-    hft.review_model.Gibbsampler()
-    print 'Finished performing Gibbs sampling in', (dt.now() - start_time).seconds, 'seconds'
-    
-    start_time = dt.now()
-    hft.review_model.Gibbsamplerv2()
-    print 'Finished performing Gibbs sampling in', (dt.now() - start_time).seconds, 'seconds'
+    # start_time = dt.now()
+    # hft.review_model.Gibbsampler()
+    # print 'Finished performing Gibbs sampling in', (dt.now() - start_time).seconds, 'seconds'
 
     start_time = dt.now()
     l = hft.review_model.loglikelihood()
     print 'Finished calculating log-likelihood in', (dt.now() - start_time).seconds, 'seconds'
+
+    start_time = dt.now()
+    hft.update()
+    print 'Finished updating parameters in', (dt.now() - start_time).seconds, 'seconds'
 
