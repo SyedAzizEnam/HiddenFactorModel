@@ -76,18 +76,28 @@ class ReviewModel:
         loglikelihood: The loglikelihood of the entire corpus
         """
 
-        All_loglikelihoods = list()
+        # All_loglikelihoods = list()
+        log_likelihood = 0
 
         for i in xrange(self.n_docs):
             
             words = self.reviews[i]
             topics = self.z[i]
 
-            loglikelihood = np.log(self.theta[([i]*len(topics),topics)]) + np.log(self.phi[(topics, words)])
+            # loglikelihood = np.log(self.theta[([i]*len(topics), topics)]) + np.log(self.phi[(topics, words)])
+            log_likelihood += np.sum(np.log(self.theta[i, topics]) + np.log(self.phi[topics, words]))
+            # if np.isnan(log_likelihood):
+            #     print np.sum(np.log(self.theta[i, topics]) + np.log(self.phi[topics, words]))
+            #     print i
+            #     sys.exit(1)
 
-            All_loglikelihoods.append(np.sum(loglikelihood))
+            # All_loglikelihoods.append(np.sum(loglikelihood))
 
-        return sum(All_loglikelihoods)
+        # if log_likelihood - sum(All_loglikelihoods) != 0.0:
+        #     print log_likelihood, sum(All_loglikelihoods)
+        #     sys.exit(1)
+        # return sum(All_loglikelihoods)
+        return log_likelihood
 
     def Gibbsampler(self):
         """
