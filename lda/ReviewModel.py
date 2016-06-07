@@ -1,5 +1,4 @@
 import numpy as np
-import random
 import sys
 from DataProcessor import DataLoader
 
@@ -36,7 +35,7 @@ def sampleWithDistribution(p):
     -------
     i: index of sampled value
     """
-    r = random.random()  # Rational number between 0 and 1
+    r = np.random.uniform()  # Rational number between 0 and 1
 
     for i in xrange(len(p)):
         r = r - p[i]
@@ -51,10 +50,10 @@ class ReviewModel:
         self.n_docs, self.n_vocab = data.shape
         self.n_topics = n_topics
 
-        self.phi = np.random.rand(n_topics, self.n_vocab)
+        self.phi = np.random.uniform(size=(n_topics, self.n_vocab))
         self.phi /= self.phi.sum(axis=1)[:, None]
 
-        self.theta = np.random.rand(self.n_docs, n_topics)
+        self.theta = np.random.uniform(size=(self.n_docs, n_topics))
         self.theta /= self.theta.sum(axis=1)[:, None]
 
         self.topic_frequencies = np.zeros((self.n_docs, self.n_topics))
@@ -75,28 +74,11 @@ class ReviewModel:
         -------
         loglikelihood: The loglikelihood of the entire corpus
         """
-
-        # All_loglikelihoods = list()
         log_likelihood = 0
-
         for i in xrange(self.n_docs):
-            
             words = self.reviews[i]
             topics = self.z[i]
-
-            # loglikelihood = np.log(self.theta[([i]*len(topics), topics)]) + np.log(self.phi[(topics, words)])
             log_likelihood += np.sum(np.log(self.theta[i, topics]) + np.log(self.phi[topics, words]))
-            # if np.isnan(log_likelihood):
-            #     print np.sum(np.log(self.theta[i, topics]) + np.log(self.phi[topics, words]))
-            #     print i
-            #     sys.exit(1)
-
-            # All_loglikelihoods.append(np.sum(loglikelihood))
-
-        # if log_likelihood - sum(All_loglikelihoods) != 0.0:
-        #     print log_likelihood, sum(All_loglikelihoods)
-        #     sys.exit(1)
-        # return sum(All_loglikelihoods)
         return log_likelihood
 
     def Gibbsampler(self):

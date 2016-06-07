@@ -11,10 +11,12 @@ class HFT:
         self.rating_model = RatingModel(ratings_filename, n_hidden)
         self.rating_model.get_predicted_ratings()
 
+        self.kappa = np.random.uniform()
+
         self.review_model = ReviewModel(reviews_filename, n_hidden)
+        self.get_theta()
         self.review_model.Gibbsampler()
 
-        self.kappa = np.random.uniform()
         self.mu = 1.0
 
         self.bfgs_iter = 0
@@ -192,4 +194,5 @@ if __name__ == '__main__':
 
     start_time = dt.now()
     hft.update()
-    print 'Finished updating parameters in', (dt.now() - start_time).seconds, 'seconds over', hft.bfgs_iter, 'iterations'
+    print 'Finished updating parameters in', (dt.now() - start_time).seconds, 'seconds over', hft.bfgs_iter, \
+        'iterations'
