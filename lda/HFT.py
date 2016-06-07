@@ -93,7 +93,7 @@ class HFT:
 
     def error_gradients(self, params):
         self.bfgs_iter += 1
-        # start_time = dt.now()
+        start_time = dt.now()
 
         alpha, beta_user, beta_item, gamma_user, gamma_item, phi, kappa = self.structure(params)
 
@@ -105,7 +105,7 @@ class HFT:
 
         rating_loss = predicted_rating - self.rating_model.data
         rating_error = np.sum(np.square(rating_loss))
-        # rating_error_time = (dt.now() - start_time).seconds
+        rating_error_time = (dt.now() - start_time).seconds
 
         # get log_likelihood
         theta = np.exp(kappa * gamma_item)
@@ -116,7 +116,7 @@ class HFT:
             words = self.review_model.reviews[i]
             topics = self.review_model.z[i]
             log_likelihood += np.sum(np.log(theta[i, topics]) + np.log(phi[topics, words]))
-        # review_error_time = (dt.now() - start_time).seconds - rating_error_time
+        review_error_time = (dt.now() - start_time).seconds - rating_error_time
 
         error = rating_error - self.mu * log_likelihood
 
@@ -153,7 +153,7 @@ class HFT:
         #     print np.array([kappa_gradient]).shape
         #     sys.exit(1)
 
-        # print self.bfgs_iter, rating_error_time, review_error_time, (dt.now() - start_time).seconds, start_time.time()
+        print self.bfgs_iter, rating_error_time, review_error_time, (dt.now() - start_time).seconds, start_time.time()
         return error, gradients
 
     def update(self):
