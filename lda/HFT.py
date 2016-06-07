@@ -135,10 +135,12 @@ class HFT:
 
     def update(self):
         params = self.flatten()
-        opt_params = minimize(self.error_grad, params, method='L-BFGS-B', jac=True).x
+        opt_params = minimize(self.error_gradients, params, method='L-BFGS-B', jac=True).x
         self.rating_model.alpha, self.rating_model.beta_user, self.rating_model.beta_item, \
             self.rating_model.gamma_user, self.rating_model.gamma_item, \
             self.review_model.phi, self.kappa = self.structure(opt_params)
+        self.review_model.phi = np.exp(self.review_model.phi)
+        self.review_model.phi /= self.review_model.phi.sum(axis=1)[:, None]
 
 if __name__ == '__main__':
     print 'Running main method...'
