@@ -6,7 +6,6 @@ import sys
 from RatingModel import RatingModel
 from ReviewModel import ReviewModel
 
-
 class HFT:
     def __init__(self, ratings_filename='../Data/ratings.npz', reviews_filename='../Data/reviews.npz', n_hidden=10):
         self.rating_model = RatingModel(ratings_filename, n_hidden)
@@ -17,6 +16,8 @@ class HFT:
 
         self.kappa = np.random.uniform()
         self.mu = 1.0
+
+        self.bfgs_iter = 0
 
     def get_theta(self):
         self.review_model.theta = np.exp(self.kappa * self.rating_model.gamma_item)
@@ -91,6 +92,9 @@ class HFT:
         return self.rating_model.get_rating_error() - self.mu * self.review_model.loglikelihood()
 
     def error_gradients(self, params):
+        self.bfgs_iter += 1
+        start_time = dt.now()
+
         alpha, beta_user, beta_item, gamma_user, gamma_item, phi, kappa = self.structure(params)
 
         # get rating error
@@ -149,6 +153,7 @@ class HFT:
         #     print np.array([kappa_gradient]).shape
         #     sys.exit(1)
 
+        print self.bfgs_iter, (dt.now() - start_time).seconds, start_time.time()
         return error, gradients
 
     def update(self):
