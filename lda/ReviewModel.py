@@ -83,8 +83,7 @@ class ReviewModel:
             words = self.reviews[i]
             topics = self.z[i]
 
-            loglikelihood = np.log(self.theta[([i]*len(topics),topics)]) + \
-                              np.log(self.phi[(topics,words)])
+            loglikelihood = np.log(self.theta[([i]*len(topics),topics)]) + np.log(self.phi[(topics, words)])
 
             All_loglikelihoods.append(np.sum(loglikelihood))
 
@@ -102,9 +101,6 @@ class ReviewModel:
 
         self.topic_frequencies.fill(0)
         self.word_topic_frequencies.fill(0)
-
-        # np_topic_freq = np.zeros((self.n_docs, self.n_topics))
-        # np_word_topic_freq = np.zeros((self.n_topics, self.n_vocab))
         
         for i in xrange(self.n_docs):
             
@@ -118,33 +114,6 @@ class ReviewModel:
 
             np.add.at(self.topic_frequencies[i], topic_assignments, 1)
             np.add.at(self.word_topic_frequencies, [topic_assignments, words], 1)
-
-            # topic_assignments = []
-            # for word, r in zip(words, rands):
-            #     p = self.theta[i, :]*self.phi[:, word]
-            #     p = p/p.sum()
-            #     new_topic = sampleWithDistribution(r, p)
-            #     topic_assignments.append(new_topic)
-            #
-            #     self.topic_frequencies[i, new_topic] += 1.0
-            #     self.word_topic_frequencies[new_topic, word] += 1.0
-            #
-            # for m, t in zip(map_topic_assignments, topic_assignments):
-            #     if t != m:
-            #         print 'ERROR in Sampling'
-            #         sys.exit(1)
-            #
-            # if np.sum(np_topic_freq-self.topic_frequencies) != 0:
-            #     print 'ERROR in topic freqs'
-            #     print i
-            #     print np.sum(np_topic_freq-self.topic_frequencies)
-            #     sys.exit(1)
-            #
-            # if np.sum(np_word_topic_freq - self.word_topic_frequencies) != 0:
-            #     print 'ERROR in word_topic_freqs'
-            #     print i
-            #     print np.sum(np_word_topic_freq - self.word_topic_frequencies)
-            #     sys.exit(1)
 
             new_topic_assignments.append(np.array(topic_assignments))
 

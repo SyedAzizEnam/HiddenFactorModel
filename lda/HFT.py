@@ -1,5 +1,6 @@
 import numpy as np
 from datetime import datetime as dt
+from scipy.optimize import minimize
 
 from RatingModel import RatingModel
 from ReviewModel import ReviewModel
@@ -68,7 +69,29 @@ class HFT:
 
         return tuple(param_list)
 
-    def get_gradients(self):
+    # def get_gradients(self):
+    #     rating_loss = self.rating_model.predicted_rating - self.rating_model.data
+    #     review_loss = (self.review_model.topic_frequencies -
+    #                    self.review_model.theta * np.sum(self.review_model.topic_frequencies, axis=1)[:, None])
+    #
+    #     alpha_gradient = 2 * np.sum(rating_loss)
+    #     beta_item_gradients = 2 * np.ravel(np.sum(rating_loss, axis=0))
+    #     beta_user_gradients = 2 * np.ravel(np.sum(rating_loss, axis=1))
+    #     gamma_user_gradients = 2 * np.dot(rating_loss, self.rating_model.gamma_item)
+    #     gamma_item_gradients = 2 * np.dot(rating_loss.transpose(), self.rating_model.gamma_user) - \
+    #                                 self.mu*self.kappa*review_loss
+    #     phi_gradients = np.divide(self.review_model.word_topic_frequencies, self.review_model.phi)
+    #     kappa_gradient = np.sum(self.rating_model.gamma_item * review_loss)
+    #
+    #     return [alpha_gradient, beta_user_gradients, beta_item_gradients,
+    #             gamma_user_gradients, gamma_item_gradients, phi_gradients, kappa_gradient]
+
+    # def get_error(self):
+    #     return self.rating_model.get_rating_error() - self.mu * self.review_model.loglikelihood()
+
+    def error_gradients(self, params):
+        alpha, beta_user, beta_item, gamma_user, gamma_item, phi, kappa = self.structure(params)
+
         rating_loss = self.rating_model.predicted_rating - self.rating_model.data
         review_loss = (self.review_model.topic_frequencies -
                        self.review_model.theta * np.sum(self.review_model.topic_frequencies, axis=1)[:, None])
@@ -76,17 +99,23 @@ class HFT:
         alpha_gradient = 2 * np.sum(rating_loss)
         beta_item_gradients = 2 * np.ravel(np.sum(rating_loss, axis=0))
         beta_user_gradients = 2 * np.ravel(np.sum(rating_loss, axis=1))
-        gamma_user_gradients = 2 * np.dot(rating_loss, self.rating_model.gamma_item)
-        gamma_item_gradients = 2 * np.dot(rating_loss.transpose(), self.rating_model.gamma_user) - \
-                                    self.mu*self.kappa*review_loss
-        phi_gradients = np.divide(self.review_model.word_topic_frequencies, self.review_model.phi)
-        kappa_gradient = np.sum(self.rating_model.gamma_item * review_loss)
+        gamma_user_gradients = 2 * np.dot(rating_loss, gamma_item)
+        gamma_item_gradients = 2 * np.dot(rating_loss.transpose(), gamma_user) - self.mu * kappa * review_loss
+        phi_gradients = np.divide(self.review_model.word_topic_frequencies, phi)
+        kappa_gradient = np.sum(gamma_item * review_loss)
 
-        return [alpha_gradient, beta_user_gradients, beta_item_gradients,
-                gamma_user_gradients, gamma_item_gradients, phi_gradients, kappa_gradient]
+        gradients = np.concatenate(np.array([alpha_gradient]), beta_user_gradients, beta_item_gradients,
+                                   gamma_user_gradients.flatten(), gamma_item_gradients.flatten,
+                                   phi_gradients.flatten(), np.array([kappa_gradient]))
 
-    def get_error(self):
-        return self.rating_model.get_rating_error() - self.mu * self.review_model.loglikelihood()
+        return gradients
+
+    def update(self):
+        params = self.flatten()
+        opt_params = minimize(self.error_grad, params, method='L-BFGS-B', jac=True).x
+        self.rating_model.alpha, self.rating_model.beta_user, self.rating_model.beta_item, \
+            self.rating_model.gamma_user, self.rating_model.gamma_item, \
+            self.review_model.phi, self.kappa = self.structure(opt_params)
 
 if __name__ == '__main__':
     print 'Running main method...'
