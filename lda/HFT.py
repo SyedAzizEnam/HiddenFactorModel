@@ -140,8 +140,8 @@ class HFT:
         print np.sum(theta, axis=1)[:, None] 
         theta /= np.sum(theta, axis=1)[:, None]
 
-        phi = np.exp(self.review_model.phi+self.review_model.backgroundwords[None,:])
-        phi /= self.review_model.phi.sum(axis=1)[:, None]
+        phi = np.exp(phi+self.review_model.backgroundwords[None,:])
+        phi /= phi.sum(axis=1)[:, None]
 
         log_likelihood = 0
         for i in xrange(self.review_model.n_docs):
