@@ -161,8 +161,8 @@ class HFT:
         exp_phi = np.exp(self.review_model.phi+self.review_model.backgroundwords[None,:])
         exp_phi /= exp_phi.sum(axis=1)[:, None]
         topic_counts = self.review_model.topic_frequencies.sum(axis=0) 
-
-        phi_gradients = - self.mu*(review_model.word_topic_frequencies - topic_counts[None,:]*exp_phi)
+	print topic_counts.shape
+        phi_gradients = - self.mu*(self.review_model.word_topic_frequencies - topic_counts[None,:].transpose()*exp_phi)
         kappa_gradient = np.sum(gamma_item * review_loss)
 
         # try:
