@@ -170,6 +170,7 @@ class HFT:
         self.review_model.phi /= self.review_model.phi.sum(axis=1)[:, None]
 
 if __name__ == '__main__':
+    print sys.version
     print 'Running main method...'
 
     start_time = dt.now()
