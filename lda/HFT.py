@@ -77,6 +77,7 @@ class HFT:
 
     def get_gradients(self):
         self.get_theta()
+        hft.rating_model.get_predicted_ratings()
         rating_loss = self.rating_model.predicted_rating - self.rating_model.data
         review_loss = (self.review_model.topic_frequencies -
                        self.review_model.theta * np.sum(self.review_model.topic_frequencies, axis=1)[:, None])
@@ -116,6 +117,7 @@ class HFT:
         self.review_model.phi -= self.step_size * gradients[5]
         #self.kappa -= self.step_size * gradients[6]
         print self.opt_iter, (dt.now() - start_time).seconds,[grad.max() for grad in gradients]
+        print "Loss: {0}".format(self.get_error())
 
     def error_gradients(self, params):
         self.opt_iter += 1
