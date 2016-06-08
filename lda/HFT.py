@@ -115,8 +115,6 @@ class HFT:
         self.rating_model.gamma_user -= self.step_size * gradients[3]
         self.rating_model.gamma_item -= self.step_size * gradients[4]
         self.review_model.phi -= self.step_size * gradients[5]
-        self.review_model.phi = np.exp(self.review_model.phi)
-        self.review_model.phi /= self.review_model.phi.sum(axis=1)[:, None]
         #self.kappa -= self.step_size * gradients[6]
         print self.opt_iter, (dt.now() - start_time).seconds,[grad.max() for grad in gradients]
         print "Loss: {0}".format(error)
@@ -159,7 +157,12 @@ class HFT:
         beta_user_gradients = 2 * np.ravel(np.sum(rating_loss, axis=1))
         gamma_user_gradients = 2 * np.asarray(np.dot(rating_loss, gamma_item))
         gamma_item_gradients = 2 * np.asarray(np.dot(rating_loss.transpose(), gamma_user)) - self.mu*kappa*review_loss
-        phi_gradients = np.divide(self.review_model.word_topic_frequencies, phi)
+        
+        exp_phi = np.exp(self.review_model.phi+self.review_model.backgroundwords[None,:])
+        exp_phi /= exp_phi.sum(axis=1)[:, None]
+        topic_counts = self.review_model.topic_frequencies.sum(axis=0) 
+
+        phi_gradients = - self.mu*(review_model.word_topic_frequencies - topic_counts[None,:]*exp_phi)
         kappa_gradient = np.sum(gamma_item * review_loss)
 
         # try:
@@ -211,17 +214,17 @@ if __name__ == '__main__':
     #grads = hft.get_gradients()
     #print 'Finished calculating gradients in', (dt.now() - start_time).seconds, 'seconds'
 
-    start_time = dt.now()
-    hft.rating_model.get_predicted_ratings()
-    print 'Finished predicting new ratings in', (dt.now() - start_time).seconds, 'seconds'
+    #start_time = dt.now()
+    #hft.rating_model.get_predicted_ratings()
+    #print 'Finished predicting new ratings in', (dt.now() - start_time).seconds, 'seconds'
 
     start_time = dt.now()
     hft.review_model.Gibbsampler()
     print 'Finished performing Gibbs sampling in', (dt.now() - start_time).seconds, 'seconds'
 
-    start_time = dt.now()
-    l = hft.review_model.loglikelihood()
-    print 'Finished calculating log-likelihood in', (dt.now() - start_time).seconds, 'seconds'
+    #start_time = dt.now()
+    #l = hft.review_model.loglikelihood()
+    #print 'Finished calculating log-likelihood in', (dt.now() - start_time).seconds, 'seconds'
 
     start_time = dt.now()
     # hft.update()

@@ -61,11 +61,20 @@ class ReviewModel:
 
         self.z = list()
         self.reviews = list()
+        self.backgroundwords = np.zeros(self.n_vocab)
+
         for doc_ix in xrange(self.n_docs):
             data_review = data[doc_ix, :].toarray()[0]
             n_words = int(np.sum(data_review))
             self.z.append(np.zeros(n_words, dtype=int))
             self.reviews.append(flatten_bow(data_review))
+            for entry in self.reviews[-1]:
+                self.backgroundwords[entry] += 1.0
+
+        self.backgroundwords /= self.backgroundwords.sum()
+
+
+
 
     def loglikelihood(self):
         """Computes likelihood of a corpus
