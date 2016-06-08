@@ -115,6 +115,8 @@ class HFT:
         self.rating_model.gamma_user -= self.step_size * gradients[3]
         self.rating_model.gamma_item -= self.step_size * gradients[4]
         self.review_model.phi -= self.step_size * gradients[5]
+        self.review_model.phi = np.exp(self.review_model.phi)
+        self.review_model.phi /= self.review_model.phi.sum(axis=1)[:, None]
         #self.kappa -= self.step_size * gradients[6]
         #print self.opt_iter, (dt.now() - start_time).seconds,[grad.max() for grad in gradients]
         print "Loss: {0}".format(error)
