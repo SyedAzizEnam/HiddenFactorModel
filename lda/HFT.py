@@ -21,7 +21,7 @@ class HFT:
         self.mu = 1.0
 
         self.opt_iter = 0
-        self.step_size = 0.001
+        self.step_size = 0.1
 
     def get_theta(self):
         self.review_model.theta = np.exp(self.kappa * self.rating_model.gamma_item)
@@ -115,7 +115,7 @@ class HFT:
         self.rating_model.gamma_user -= self.step_size * gradients[3]
         self.rating_model.gamma_item -= self.step_size * gradients[4]
         self.review_model.phi -= self.step_size * gradients[5]
-        #self.kappa -= self.step_size * gradients[6]
+        self.kappa -= self.step_size * gradients[6]
         print self.opt_iter, (dt.now() - start_time).seconds,[grad.max() for grad in gradients]
         print "Loss: {0}".format(error)
 
