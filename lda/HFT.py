@@ -20,7 +20,7 @@ class HFT:
 
         self.mu = 1.0
 
-        self.bfgs_iter = 0
+        self.opt_iter = 0
         self.step_size = 0.001
 
     def get_theta(self):
@@ -104,6 +104,8 @@ class HFT:
             Also, only exponentiate and normalize phi after gradient update converges
     """
     def gradient_update(self):
+        start_time = dt.now()
+        self.opt_iter += 1
         gradients = self.get_gradients()
         self.rating_model.alpha -= self.step_size * gradients[0]
         self.rating_model.beta_user -= self.step_size * gradients[1]
@@ -112,9 +114,11 @@ class HFT:
         self.rating_model.gamma_item -= self.step_size * gradients[4]
         self.review_model.phi -= self.step_size * gradients[5]
         self.kappa -= self.step_size * gradients[6]
+        self.get_theta()
+        print self.opt_iter, (dt.now() - start_time).seconds
 
     def error_gradients(self, params):
-        self.bfgs_iter += 1
+        self.opt_iter += 1
         start_time = dt.now()
 
         alpha, beta_user, beta_item, gamma_user, gamma_item, phi, kappa = self.structure(params)
@@ -175,13 +179,13 @@ class HFT:
         #     print np.array([kappa_gradient]).shape
         #     sys.exit(1)
 
-        print self.bfgs_iter, rating_error_time, review_error_time, (dt.now() - start_time).seconds, start_time.time()
+        print self.opt_iter, rating_error_time, review_error_time, (dt.now() - start_time).seconds, start_time.time()
         return error, gradients
 
     def update(self):
         params = self.flatten()
 
-        self.bfgs_iter = 0
+        self.opt_iter = 0
         opt_params = minimize(self.error_gradients, params, method='L-BFGS-B', jac=True).x
         self.rating_model.alpha, self.rating_model.beta_user, self.rating_model.beta_item, \
             self.rating_model.gamma_user, self.rating_model.gamma_item, \
@@ -213,5 +217,6 @@ if __name__ == '__main__':
     print 'Finished calculating log-likelihood in', (dt.now() - start_time).seconds, 'seconds'
 
     start_time = dt.now()
-    hft.update()
-    print 'Finished updating parameters in', (dt.now() - start_time).seconds, 'seconds over', hft.bfgs_iter, 'iterations'
+    for i in xrange(100):
+        hft.gradient_update()
+    print 'Finished updating parameters in', (dt.now() - start_time).seconds, 'seconds'
