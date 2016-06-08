@@ -137,10 +137,11 @@ class HFT:
 
         # get log_likelihood
         theta = np.exp(kappa * gamma_item)
+        print np.sum(theta, axis=1)[:, None] 
         theta /= np.sum(theta, axis=1)[:, None]
 
-        self.review_model.phi = np.exp(self.review_model.phi+self.review_model.backgroundwords[None,:])
-        self.review_model.phi /= self.review_model.phi.sum(axis=1)[:, None]
+        phi = np.exp(self.review_model.phi+self.review_model.backgroundwords[None,:])
+        phi /= self.review_model.phi.sum(axis=1)[:, None]
 
         log_likelihood = 0
         for i in xrange(self.review_model.n_docs):
@@ -161,11 +162,9 @@ class HFT:
         gamma_user_gradients = 2 * np.asarray(np.dot(rating_loss, gamma_item))
         gamma_item_gradients = 2 * np.asarray(np.dot(rating_loss.transpose(), gamma_user)) - self.mu*kappa*review_loss
         
-        exp_phi = np.exp(self.review_model.phi+self.review_model.backgroundwords[None,:])
-        exp_phi /= exp_phi.sum(axis=1)[:, None]
         topic_counts = self.review_model.topic_frequencies.sum(axis=0) 
 
-        phi_gradients = - self.mu*(self.review_model.word_topic_frequencies - topic_counts[None,:].transpose()*exp_phi)
+        phi_gradients = - self.mu*(self.review_model.word_topic_frequencies - topic_counts[None,:].transpose()*phi)
         kappa_gradient = np.sum(gamma_item * review_loss)
 
         # try:
