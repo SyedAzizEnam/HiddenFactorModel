@@ -21,7 +21,7 @@ class HFT:
         self.mu = 1.0
 
         self.opt_iter = 0
-        self.step_size = 0.01
+        self.step_size = 0.001
 
     def get_theta(self):
         self.review_model.theta = np.exp(self.kappa * self.rating_model.gamma_item)
@@ -209,9 +209,9 @@ if __name__ == '__main__':
     hft.rating_model.get_predicted_ratings()
     print 'Finished predicting new ratings in', (dt.now() - start_time).seconds, 'seconds'
 
-    # start_time = dt.now()
-    # hft.review_model.Gibbsampler()
-    # print 'Finished performing Gibbs sampling in', (dt.now() - start_time).seconds, 'seconds'
+    start_time = dt.now()
+    hft.review_model.Gibbsampler()
+    print 'Finished performing Gibbs sampling in', (dt.now() - start_time).seconds, 'seconds'
 
     start_time = dt.now()
     l = hft.review_model.loglikelihood()
