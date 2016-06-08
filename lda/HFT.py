@@ -118,7 +118,7 @@ class HFT:
         self.review_model.phi = np.exp(self.review_model.phi)
         self.review_model.phi /= self.review_model.phi.sum(axis=1)[:, None]
         #self.kappa -= self.step_size * gradients[6]
-        #print self.opt_iter, (dt.now() - start_time).seconds,[grad.max() for grad in gradients]
+        print self.opt_iter, (dt.now() - start_time).seconds,[grad.max() for grad in gradients]
         print "Loss: {0}".format(error)
 
     def error_gradients(self, params):
