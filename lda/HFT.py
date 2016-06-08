@@ -162,8 +162,8 @@ class HFT:
         gamma_user_gradients = 2 * np.asarray(np.dot(rating_loss, gamma_item))
         gamma_item_gradients = 2 * np.asarray(np.dot(rating_loss.transpose(), gamma_user)) - self.mu*kappa*review_loss
         
-        #gamma_user_gradients += 2*gamma_user
-        #gamma_item_gradients += 2*gamma_item
+        gamma_user_gradients += 2*gamma_user
+        gamma_item_gradients += 2*gamma_item
 
         topic_counts = self.review_model.topic_frequencies.sum(axis=0) 
 
