@@ -108,7 +108,7 @@ class HFT:
     def gradient_update(self):
         start_time = dt.now()
         self.opt_iter += 1
-        error, gradients = self.error_gradients()
+        error, gradients = self.error_gradients(self.flatten())
         self.rating_model.alpha -= self.step_size * gradients[0]
         self.rating_model.beta_user -= self.step_size * gradients[1]
         self.rating_model.beta_item -= self.step_size * gradients[2]
