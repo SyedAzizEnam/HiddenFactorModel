@@ -6,6 +6,7 @@ import sys
 from RatingModel import RatingModel
 from ReviewModel import ReviewModel
 
+
 class HFT:
     def __init__(self, ratings_filename='../Data/ratings.npz', reviews_filename='../Data/reviews.npz', n_hidden=10):
         self.rating_model = RatingModel(ratings_filename, n_hidden)
@@ -20,6 +21,7 @@ class HFT:
         self.mu = 1.0
 
         self.bfgs_iter = 0
+        self.step_size = 0.001
 
     def get_theta(self):
         self.review_model.theta = np.exp(self.kappa * self.rating_model.gamma_item)
@@ -92,6 +94,24 @@ class HFT:
 
     def get_error(self):
         return self.rating_model.get_rating_error() - self.mu * self.review_model.loglikelihood()
+
+    """
+        Performs gradient update using self.step_size
+        Calls get_gradients to get gradients and performs update
+
+        NOTE: After gradient update converges, call get_theta to recalculate theta values and then
+                call GibbSampler to resample; call get_theta first to update theta used for sampling
+            Also, only exponentiate and normalize phi after gradient update converges
+    """
+    def gradient_update(self):
+        gradients = self.get_gradients()
+        self.rating_model.alpha -= self.step_size * gradients[0]
+        self.rating_model.beta_user -= self.step_size * gradients[1]
+        self.rating_model.beta_item -= self.step_size * gradients[2]
+        self.rating_model.gamma_user -= self.step_size * gradients[3]
+        self.rating_model.gamma_item -= self.step_size * gradients[4]
+        self.review_model.phi -= self.step_size * gradients[5]
+        self.kappa -= self.step_size * gradients[6]
 
     def error_gradients(self, params):
         self.bfgs_iter += 1
