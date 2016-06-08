@@ -116,7 +116,7 @@ class HFT:
         self.rating_model.gamma_item -= self.step_size * gradients[4]
         self.review_model.phi -= self.step_size * gradients[5]
         #self.kappa -= self.step_size * gradients[6]
-        print self.opt_iter, (dt.now() - start_time).seconds,[grad.max() for grad in gradients]
+        #print self.opt_iter, (dt.now() - start_time).seconds,[grad.max() for grad in gradients]
         print "Loss: {0}".format(error)
 
     def error_gradients(self, params):
@@ -161,9 +161,11 @@ class HFT:
         kappa_gradient = np.sum(gamma_item * review_loss)
 
         # try:
-        gradients = np.concatenate((np.array([alpha_gradient]), beta_user_gradients, beta_item_gradients,
-                                   gamma_user_gradients.flatten(), gamma_item_gradients.flatten(),
-                                   phi_gradients.flatten(), np.array([kappa_gradient])))
+        gradients = [alpha_gradient, beta_user_gradients, beta_item_gradients,
+                gamma_user_gradients, gamma_item_gradients, phi_gradients, kappa_gradient]
+        #gradients = np.concatenate((np.array([alpha_gradient]), beta_user_gradients, beta_item_gradients,
+                                   #gamma_user_gradients.flatten(), gamma_item_gradients.flatten(),
+                                   #phi_gradients.flatten(), np.array([kappa_gradient])))
         #     gradients = np.concatenate((np.array([alpha_gradient]),
         #                                 beta_user_gradients,
         #                                 beta_item_gradients,
