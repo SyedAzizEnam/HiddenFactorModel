@@ -12,7 +12,7 @@ class HFT:
         self.rating_model = RatingModel(ratings_filename, n_hidden)
         self.rating_model.get_predicted_ratings()
 
-        self.kappa = np.random.uniform()
+        self.kappa = 1.0 # np.random.uniform()
 
         self.review_model = ReviewModel(reviews_filename, n_hidden)
         self.get_theta()
@@ -114,7 +114,7 @@ class HFT:
         self.rating_model.gamma_user -= self.step_size * gradients[3]
         self.rating_model.gamma_item -= self.step_size * gradients[4]
         self.review_model.phi -= self.step_size * gradients[5]
-        self.kappa -= self.step_size * gradients[6]
+        #self.kappa -= self.step_size * gradients[6]
         print self.opt_iter, (dt.now() - start_time).seconds,[grad.max() for grad in gradients]
 
     def error_gradients(self, params):
