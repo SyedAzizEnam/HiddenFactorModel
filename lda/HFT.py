@@ -245,6 +245,7 @@ if __name__ == '__main__':
         difference = np.absolute(previous_params - hft.flatten())
 
         print difference.max()
+        print difference
 
         print i, ': Gibbs Sampling', hft.kappa
     print 'Finished updating parameters in', (dt.now() - start_time).seconds, 'seconds'
