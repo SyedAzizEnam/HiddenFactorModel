@@ -6,6 +6,7 @@ import sys
 from RatingModel import RatingModel
 from ReviewModel import ReviewModel
 
+
 class HFT:
     def __init__(self, ratings_filename='../Data/ratings.npz', reviews_filename='../Data/reviews.npz', n_hidden=10):
         self.rating_model = RatingModel(ratings_filename, n_hidden)
@@ -19,7 +20,9 @@ class HFT:
 
         self.mu = 1.0
 
-        self.bfgs_iter = 0
+        self.opt_iter = 0
+        self.step_size = 1e-5
+        self.max_kappa = 1e+5
 
     def get_theta(self):
         self.review_model.theta = np.exp(self.kappa * self.rating_model.gamma_item)
@@ -64,7 +67,7 @@ class HFT:
         offset = ptr
 
         # phi
-        ptr = offset + self.review_model.n_topics*self.review_model.n_vocab
+        ptr = offset + self.review_model.n_topics * self.review_model.n_vocab
         param_list += [array[offset:ptr].reshape(self.review_model.n_topics, self.review_model.n_vocab)]
         offset = ptr
 
@@ -78,13 +81,17 @@ class HFT:
         review_loss = (self.review_model.topic_frequencies -
                        self.review_model.theta * np.sum(self.review_model.topic_frequencies, axis=1)[:, None])
 
+        self.review_model.phi = np.exp(self.review_model.phi+self.review_model.backgroundwords[None,:])
+        self.review_model.phi /= self.review_model.phi.sum(axis=1)[:, None]
+
         alpha_gradient = 2 * np.sum(rating_loss)
         beta_item_gradients = 2 * np.ravel(np.sum(rating_loss, axis=0))
         beta_user_gradients = 2 * np.ravel(np.sum(rating_loss, axis=1))
         gamma_user_gradients = 2 * np.dot(rating_loss, self.rating_model.gamma_item)
         gamma_item_gradients = 2 * np.dot(rating_loss.transpose(), self.rating_model.gamma_user) - \
-                                    self.mu*self.kappa*review_loss
-        phi_gradients = np.divide(self.review_model.word_topic_frequencies, self.review_model.phi)
+                               self.mu * self.kappa * review_loss
+        
+        phi_gradients = - self.mu*(self.review_model.word_topic_frequencies - topic_counts[None,:].transpose()*phi)
         kappa_gradient = np.sum(self.rating_model.gamma_item * review_loss)
 
         return [alpha_gradient, beta_user_gradients, beta_item_gradients,
@@ -93,16 +100,50 @@ class HFT:
     def get_error(self):
         return self.rating_model.get_rating_error() - self.mu * self.review_model.loglikelihood()
 
+    """
+        Performs gradient update using self.step_size
+        Calls get_gradients to get gradients and performs update
+
+        NOTE: After gradient update converges, call get_theta to recalculate theta values and then
+                call GibbSampler to resample; call get_theta first to update theta used for sampling
+            Also, only exponentiate and normalize phi after gradient update converges
+    """
+    def gradient_update(self):
+        start_time = dt.now()
+        self.opt_iter += 1
+        gradients = self.get_gradients()
+        for i, grad in enumerate(gradients):
+            if np.any(np.isnan(grad)):
+                print '\t', i, 'NaN'
+                return False
+        self.rating_model.alpha -= self.step_size * gradients[0]
+        self.rating_model.beta_user -= self.step_size * gradients[1]
+        self.rating_model.beta_item -= self.step_size * gradients[2]
+        self.rating_model.gamma_user -= self.step_size * gradients[3]
+        self.rating_model.gamma_item -= self.step_size * gradients[4]
+        self.review_model.phi -= self.step_size * gradients[5]
+        self.kappa -= self.step_size * gradients[6]
+
+        theta = np.exp(self.kappa * self.rating_model.gamma_item)
+        partition = np.sum(theta, axis=1)
+        theta /= partition[:, None]
+        if np.any(np.isnan(theta)):
+            print '\t theta NaN'
+            return False
+
+        self.get_theta()
+        print self.opt_iter, (dt.now() - start_time).seconds
+        return True
+
     def error_gradients(self, params):
-        self.bfgs_iter += 1
+        self.opt_iter += 1
         start_time = dt.now()
 
         alpha, beta_user, beta_item, gamma_user, gamma_item, phi, kappa = self.structure(params)
 
         # get rating error
         predicted_rating = np.zeros((self.rating_model.n_users, self.rating_model.n_items))
-        ix = self.rating_model.data.nonzero()
-        for u, i in zip(ix[0], ix[1]):
+        for u, i in zip(self.rating_model.corpus_ix[0], self.rating_model.corpus_ix[1]):
             predicted_rating[u, i] = np.dot(gamma_user[u, :], gamma_item[i, :]) + alpha + beta_user[u] + beta_item[i]
 
         rating_loss = predicted_rating - self.rating_model.data
@@ -130,7 +171,8 @@ class HFT:
         beta_item_gradients = 2 * np.ravel(np.sum(rating_loss, axis=0))
         beta_user_gradients = 2 * np.ravel(np.sum(rating_loss, axis=1))
         gamma_user_gradients = 2 * np.asarray(np.dot(rating_loss, gamma_item))
-        gamma_item_gradients = 2 * np.asarray(np.dot(rating_loss.transpose(), gamma_user)) - self.mu*kappa*review_loss
+        gamma_item_gradients = 2 * np.asarray(np.dot(rating_loss.transpose(), gamma_user)) - \
+                               self.mu * kappa * review_loss
         phi_gradients = np.divide(self.review_model.word_topic_frequencies, phi)
         kappa_gradient = np.sum(gamma_item * review_loss)
 
@@ -138,31 +180,15 @@ class HFT:
         gradients = np.concatenate((np.array([alpha_gradient]), beta_user_gradients, beta_item_gradients,
                                    gamma_user_gradients.flatten(), gamma_item_gradients.flatten(),
                                    phi_gradients.flatten(), np.array([kappa_gradient])))
-        #     gradients = np.concatenate((np.array([alpha_gradient]),
-        #                                 beta_user_gradients,
-        #                                 beta_item_gradients,
-        #                                 gamma_user_gradients.flatten(),
-        #                                 gamma_item_gradients.flatten(),
-        #                                 phi_gradients.flatten(),
-        #                                 np.array([kappa_gradient])))
-        # except:
-        #     print np.array([alpha_gradient]).shape
-        #     print beta_user_gradients.shape
-        #     print beta_item_gradients.shape
-        #     print gamma_user_gradients.shape, gamma_user_gradients.flatten().shape
-        #     print gamma_item_gradients.shape, gamma_item_gradients.flatten().shape
-        #     print phi_gradients.shape, phi_gradients.flatten().shape
-        #     print np.array([kappa_gradient]).shape
-        #     sys.exit(1)
 
-        print self.bfgs_iter, rating_error_time, review_error_time, (dt.now() - start_time).seconds, start_time.time()
+        print self.opt_iter, rating_error_time, review_error_time, (dt.now() - start_time).seconds, start_time.time()
         return error, gradients
 
     def update(self):
         params = self.flatten()
 
-        self.bfgs_iter = 0
-        opt_params = minimize(self.error_gradients, params, method='L-BFGS-B', jac=True).x
+        self.opt_iter = 0
+        opt_params = minimize(self.error_gradients, params, method='L-BFGS-B', jac=True, options={'maxiter': 2, 'maxfun': 2, 'disp': True}).x
         self.rating_model.alpha, self.rating_model.beta_user, self.rating_model.beta_item, \
             self.rating_model.gamma_user, self.rating_model.gamma_item, \
             self.review_model.phi, self.kappa = self.structure(opt_params)
@@ -192,9 +218,23 @@ if __name__ == '__main__':
     start_time = dt.now()
     l = hft.review_model.loglikelihood()
     print 'Finished calculating log-likelihood in', (dt.now() - start_time).seconds, 'seconds'
-    
-    phi1 = hft.review_model.phi
+
+    # start_time = dt.now()
+    # hft.update()
+    # print 'Finished updating parameters in', (dt.now() - start_time).seconds, 'seconds'
+
     start_time = dt.now()
-    hft.update()
-    print 'Finished updating parameters in', (dt.now() - start_time).seconds, 'seconds over', hft.bfgs_iter, \
-        'iterations'
+
+    for i in xrange(50):
+        break_flag = False
+        for j in xrange(2):
+            status = hft.gradient_update()
+            if not status:
+                break_flag = True
+                break
+        if break_flag:
+            break
+        hft.review_model.Gibbsampler()
+        print i, ': Gibbs Sampling', hft.kappa
+    print 'Finished updating parameters in', (dt.now() - start_time).seconds, 'seconds'
+
