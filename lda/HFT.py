@@ -230,7 +230,7 @@ if __name__ == '__main__':
 
     for i in xrange(50):
 
-        previous_params = htf.flatten()
+        previous_params = hft.flatten()
 
         break_flag = False
         for j in xrange(2):
@@ -242,7 +242,7 @@ if __name__ == '__main__':
             break
         hft.review_model.Gibbsampler()
 
-        difference = np.absolute(previous_params - htf.flatten())
+        difference = np.absolute(previous_params - hft.flatten())
 
         print difference.max()
 
