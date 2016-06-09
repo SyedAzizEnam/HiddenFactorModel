@@ -192,7 +192,8 @@ if __name__ == '__main__':
     start_time = dt.now()
     l = hft.review_model.loglikelihood()
     print 'Finished calculating log-likelihood in', (dt.now() - start_time).seconds, 'seconds'
-
+    
+    phi1 = hft.review_model.phi
     start_time = dt.now()
     hft.update()
     print 'Finished updating parameters in', (dt.now() - start_time).seconds, 'seconds over', hft.bfgs_iter, \
