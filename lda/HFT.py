@@ -118,6 +118,7 @@ class HFT:
             if np.any(np.isnan(grad)):
                 print '\t', i, 'NaN'
                 return False
+
         self.rating_model.alpha -= self.step_size * gradients[0]
         self.rating_model.beta_user -= self.step_size * gradients[1]
         self.rating_model.beta_item -= self.step_size * gradients[2]
@@ -228,6 +229,9 @@ if __name__ == '__main__':
     start_time = dt.now()
 
     for i in xrange(50):
+
+        previous_params = htf.flatten()
+
         break_flag = False
         for j in xrange(2):
             status = hft.gradient_update()
@@ -237,6 +241,11 @@ if __name__ == '__main__':
         if break_flag:
             break
         hft.review_model.Gibbsampler()
+
+        difference = np.absolute(previous_params - htf.flatten())
+
+        print difference.max()
+
         print i, ': Gibbs Sampling', hft.kappa
     print 'Finished updating parameters in', (dt.now() - start_time).seconds, 'seconds'
 
