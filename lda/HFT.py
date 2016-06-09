@@ -128,6 +128,7 @@ class HFT:
             return False
 
         self.get_theta()
+        self.rating_model.get_predicted_ratings()
         print self.opt_iter, (dt.now() - start_time).seconds
         return True
 
@@ -219,7 +220,11 @@ if __name__ == '__main__':
     # print 'Finished updating parameters in', (dt.now() - start_time).seconds, 'seconds'
 
     start_time = dt.now()
+
     for i in xrange(50):
+
+        previous_params = hft.flatten()
+
         break_flag = False
         for j in xrange(2):
             status = hft.gradient_update()
@@ -229,5 +234,11 @@ if __name__ == '__main__':
         if break_flag:
             break
         hft.review_model.Gibbsampler()
+
+        difference = np.absolute(previous_params - hft.flatten())
+
+        print difference.max()
+        print difference
+
         print i, ': Gibbs Sampling', hft.kappa
     print 'Finished updating parameters in', (dt.now() - start_time).seconds, 'seconds'
