@@ -62,12 +62,7 @@ class ReviewModel:
         self.z = list()
         self.reviews = list()
         self.backgroundwords = np.zeros(self.n_vocab)
-<<<<<<< HEAD
-        self.item_words = np.zeros(self.n_docs)
 
-=======
-        
->>>>>>> 5d1052cd28ad440fab568229de06e013fa7cf49b
         for doc_ix in xrange(self.n_docs):
             data_review = data[doc_ix, :].toarray()[0]
             n_words = int(np.sum(data_review))

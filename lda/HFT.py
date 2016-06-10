@@ -25,7 +25,7 @@ class HFT:
         self.max_kappa = 1e+5
         self.max_grad_iter = 100
         self.convergence_threshold = 0.0
-        self.max_iter = 10
+        self.max_iter = 100
 
     def get_theta(self):
         self.review_model.theta = np.exp(self.kappa * self.rating_model.gamma_item)
