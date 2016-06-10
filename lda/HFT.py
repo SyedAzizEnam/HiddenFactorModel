@@ -90,7 +90,13 @@ class HFT:
         gamma_user_gradients = 2 * np.dot(rating_loss, self.rating_model.gamma_item)
         gamma_item_gradients = 2 * np.dot(rating_loss.transpose(), self.rating_model.gamma_user) - \
                                self.mu * self.kappa * review_loss
-        phi_gradients = np.divide(self.review_model.word_topic_frequencies, self.review_model.phi)
+
+        phi = np.exp(self.review_model.phi + self.review_model.backgroundwords[None, :])
+        phi /= phi.sum(axis=1)[:, None]
+        topic_counts = self.review_model.topic_frequencies.sum(axis=0)
+        phi_gradients = - self.mu * (self.review_model.word_topic_frequencies - topic_counts[None, :].transpose() *
+                                     phi)
+        # phi_gradients = np.divide(self.review_model.word_topic_frequencies, self.review_model.phi)
         kappa_gradient = np.sum(self.rating_model.gamma_item * review_loss)
 
         return [alpha_gradient, beta_user_gradients, beta_item_gradients,
