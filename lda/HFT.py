@@ -153,6 +153,12 @@ class HFT:
                     break
                 num_iter += 1
 
+    def normalizeWordWeights(self):
+
+        average_word_prob = self.review_model.phi.mean(axis=0)
+        self.review_model.phi -= average_word_prob[None,:]
+        self.review_model.backgroundwords += average_word_prob
+
     def learn(self, method='gradient'):
         num_iter = 0
 
@@ -161,6 +167,7 @@ class HFT:
 
             previous_params = hft.flatten()
 
+            self.normalizeWordWeights()
             self.train(method)
             # exp and normalize phi
             self.review_model.phi += self.review_model.backgroundwords
