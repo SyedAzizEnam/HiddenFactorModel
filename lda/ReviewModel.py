@@ -69,19 +69,11 @@ class ReviewModel:
             self.z.append(np.zeros(n_words, dtype=int))
             self.reviews.append(flatten_bow(data_review))
             self.item_words[doc_ix] = len(self.reviews[-1])
-            for entry in self.reviews[-1]:
+            
+	    for entry in self.reviews[-1]:
                 self.backgroundwords[entry] += 1.0
 
         self.backgroundwords /= self.backgroundwords.sum()
-
-
-
-
-            for entry in self.reviews[-1]:
-                self.backgroundwords[entry] += 1.0
-
-        self.backgroundwords /= self.backgroundwords.sum()
-
 
     def loglikelihood(self):
         """Computes likelihood of a corpus
