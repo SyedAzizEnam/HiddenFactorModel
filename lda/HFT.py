@@ -258,21 +258,21 @@ if __name__ == '__main__':
     hft = HFT(ratings_filename='Data/ratings.npz', reviews_filename='Data/reviews.npz')
     print 'Finished loading model in', (dt.now() - start_time).seconds, 'seconds'
 
-    #start_time = dt.now()
-    #grads = hft.get_gradients()
-    #print 'Finished calculating gradients in', (dt.now() - start_time).seconds, 'seconds'
-
-    #start_time = dt.now()
-    #hft.rating_model.get_predicted_ratings()
-    #print 'Finished predicting new ratings in', (dt.now() - start_time).seconds, 'seconds'
+    start_time = dt.now()
+    grads = hft.get_gradients()
+    print 'Finished calculating gradients in', (dt.now() - start_time).seconds, 'seconds'
 
     start_time = dt.now()
-    hft.review_model.Gibbsampler()
-    print 'Finished performing Gibbs sampling in', (dt.now() - start_time).seconds, 'seconds'
+    hft.rating_model.get_predicted_ratings()
+    print 'Finished predicting new ratings in', (dt.now() - start_time).seconds, 'seconds'
 
-    # start_time = dt.now()
-    # hft.update()
-    # print 'Finished updating parameters in', (dt.now() - start_time).seconds, 'seconds'
+    #start_time = dt.now()
+    #hft.review_model.Gibbsampler()
+    #print 'Finished performing Gibbs sampling in', (dt.now() - start_time).seconds, 'seconds'
+
+    #start_time = dt.now()
+    #hft.update()
+    #print 'Finished updating parameters in', (dt.now() - start_time).seconds, 'seconds'
 
     start_time = dt.now()
 
