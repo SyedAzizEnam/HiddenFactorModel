@@ -90,7 +90,13 @@ class HFT:
         gamma_user_gradients = 2 * np.dot(rating_loss, self.rating_model.gamma_item)
         gamma_item_gradients = 2 * np.dot(rating_loss.transpose(), self.rating_model.gamma_user) - \
                                self.mu * self.kappa * review_loss
-        phi_gradients = np.divide(self.review_model.word_topic_frequencies, self.review_model.phi)
+
+        phi = np.exp(self.review_model.phi + self.review_model.backgroundwords[None, :])
+        phi /= phi.sum(axis=1)[:, None]
+        topic_counts = self.review_model.topic_frequencies.sum(axis=0)
+        phi_gradients = - self.mu * (self.review_model.word_topic_frequencies - topic_counts[None, :].transpose() *
+                                     phi)
+        # phi_gradients = np.divide(self.review_model.word_topic_frequencies, self.review_model.phi)
         kappa_gradient = np.sum(self.rating_model.gamma_item * review_loss)
 
         return [alpha_gradient, beta_user_gradients, beta_item_gradients,
@@ -107,27 +113,27 @@ class HFT:
         #     if np.any(np.isnan(grad)):
         #         # print '\t', i, 'NaN'
         #         return False
-        alpha = self.rating_model.alpha - self.step_size * gradients[0]
-        beta_user = np.asarray(self.rating_model.beta_user - self.step_size * gradients[1])
-        beta_item = np.asarray(self.rating_model.beta_item - self.step_size * gradients[2])
-        gamma_user = np.asarray(self.rating_model.gamma_user - self.step_size * gradients[3])
-        gamma_item = np.asarray(self.rating_model.gamma_item - self.step_size * gradients[4])
-        phi = np.asarray(self.review_model.phi - self.step_size * gradients[5])
-        kappa = self.kappa - self.step_size * gradients[6]
-        theta = np.exp(kappa * gamma_item)
-        partition = np.asarray(np.sum(theta, axis=1))
-        theta /= partition[:, None]
-        if np.any(np.isnan(theta)):
-            # print '\t theta NaN'
-            return False
-
-        self.rating_model.alpha = alpha
-        self.rating_model.beta_user = beta_user
-        self.rating_model.beta_item = beta_item
-        self.rating_model.gamma_user = gamma_user
-        self.rating_model.gamma_item = gamma_item
-        self.review_model.phi = phi
-        self.kappa = kappa
+        self.rating_model.alpha -= self.step_size * gradients[0]
+        self.rating_model.beta_user -= self.step_size * gradients[1]
+        self.rating_model.beta_item -= self.step_size * gradients[2]
+        self.rating_model.gamma_user -= self.step_size * gradients[3]
+        self.rating_model.gamma_item -= self.step_size * gradients[4]
+        self.review_model.phi -= self.step_size * gradients[5]
+        self.kappa -= self.step_size * gradients[6]
+        # theta = np.exp(kappa * gamma_item)
+        # partition = np.asarray(np.sum(theta, axis=1))
+        # theta /= partition[:, None]
+        # if np.any(np.isnan(theta)):
+        #     # print '\t theta NaN'
+        #     return False
+        #
+        # self.rating_model.alpha = alpha
+        # self.rating_model.beta_user = beta_user
+        # self.rating_model.beta_item = beta_item
+        # self.rating_model.gamma_user = gamma_user
+        # self.rating_model.gamma_item = gamma_item
+        # self.review_model.phi = phi
+        # self.kappa = kappa
         self.get_theta()
         self.rating_model.get_predicted_ratings()
         # print self.opt_iter, (dt.now() - start_time).seconds
@@ -155,10 +161,10 @@ class HFT:
 
             previous_params = hft.flatten()
 
-            self.train()
+            self.train(method)
             # exp and normalize phi
-            self.review_model.phi = np.exp(self.review_model.phi)
             self.review_model.phi += self.review_model.backgroundwords
+            self.review_model.phi = np.exp(self.review_model.phi)
             self.review_model.phi /= np.sum(self.review_model.phi, axis=1)[:, None]
 
             if np.sum(np.abs(previous_params - hft.flatten())) <= self.convergence_threshold:
@@ -226,8 +232,8 @@ class HFT:
         self.rating_model.alpha, self.rating_model.beta_user, self.rating_model.beta_item, \
             self.rating_model.gamma_user, self.rating_model.gamma_item, \
             self.review_model.phi, self.kappa = self.structure(opt_params)
-        self.review_model.phi = np.exp(self.review_model.phi)
         self.review_model.phi += self.review_model.backgroundwords
+        self.review_model.phi = np.exp(self.review_model.phi)
         self.review_model.phi /= self.review_model.phi.sum(axis=1)[:, None]
 
 if __name__ == '__main__':
