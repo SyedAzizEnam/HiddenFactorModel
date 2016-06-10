@@ -68,7 +68,6 @@ class ReviewModel:
             n_words = int(np.sum(data_review))
             self.z.append(np.zeros(n_words, dtype=int))
             self.reviews.append(flatten_bow(data_review))
-            self.item_words[doc_ix] = len(self.reviews[-1])
             
 	    for entry in self.reviews[-1]:
                 self.backgroundwords[entry] += 1.0
